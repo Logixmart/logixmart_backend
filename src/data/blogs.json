@@ -1,0 +1,18 @@
+[
+  {
+    "id": "c0f13cfc-f4e7-4dc9-8667-1239ffee5e95",
+    "title": "App Development Trends in 2026",
+    "description": "Explore the latest trends, technologies, and best practices shaping modern mobile and web application development.",
+    "imageUrl": "/uploads/1787309133497-873655327.jpg",
+    "createdAt": "2026-08-21T10:45:33.534Z",
+    "updatedAt": "2026-08-21T10:45:33.534Z"
+  },
+  {
+    "id": "ed151390-2812-4043-8f03-62c44832ed33",
+    "title": "Building Scalable Mobile Applications",
+    "description": "Learn how modern development practices, clean architecture, and scalable technologies help create reliable mobile applications.",
+    "imageUrl": "/uploads/1787309463623-668291976.jpg",
+    "createdAt": "2026-08-21T10:50:42.652Z",
+    "updatedAt": "2026-08-21T10:51:03.656Z"
+  }
+]
