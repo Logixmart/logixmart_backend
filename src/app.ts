@@ -2,10 +2,10 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import path from 'path';
 import fs from 'fs';
 import apiRouter from './routes';
 import { errorHandler } from './middlewares/errorHandler';
+import { config } from './config';
 
 const app: Application = express();
 
@@ -30,13 +30,17 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Ensure upload directories exist
+const uploadDir = config.uploadsRoot;
+const blogsUploadDir = config.blogsUploadDir;
+const resumesUploadDir = config.resumesUploadDir;
+[uploadDir, blogsUploadDir, resumesUploadDir].forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
-// Serve uploaded static files
+// Serve uploaded static files publicly at /uploads/*
 app.use('/uploads', express.static(uploadDir));
 
 // API Routes
@@ -53,4 +57,3 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(errorHandler);
 
 export default app;
-

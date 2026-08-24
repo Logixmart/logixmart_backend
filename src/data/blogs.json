@@ -11,8 +11,16 @@
     "id": "ed151390-2812-4043-8f03-62c44832ed33",
     "title": "Building Scalable Mobile Applications",
     "description": "Learn how modern development practices, clean architecture, and scalable technologies help create reliable mobile applications.",
-    "imageUrl": "/uploads/1787309463623-668291976.jpg",
+    "imageUrl": "/uploads/1787558312250-915274900.jpg",
     "createdAt": "2026-08-21T10:50:42.652Z",
-    "updatedAt": "2026-08-21T10:51:03.656Z"
+    "updatedAt": "2026-08-24T07:58:32.274Z"
+  },
+  {
+    "id": "a4845202-c17b-4cae-8234-200d532be024",
+    "title": "The Rise of Cloud Computing",
+    "description": "Discover how cloud technology is helping businesses scale faster, reduce infrastructure costs, and build more flexible digital products.",
+    "createdAt": "2026-08-24T07:58:59.196Z",
+    "updatedAt": "2026-08-24T07:59:10.308Z",
+    "imageUrl": "/uploads/1787558350298-857082026.jpg"
   }
 ]

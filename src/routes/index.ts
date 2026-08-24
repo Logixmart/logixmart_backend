@@ -1,12 +1,16 @@
 import { Router, Request, Response } from 'express';
 import adminRouter from './admin';
 import blogsRouter from './blogs';
+import jobPostRouter from './jobPost.routes';
+import jobApplicationRouter from './jobApplication.routes';
 
 const router = Router();
 
 // Mount routes
 router.use('/admin', adminRouter);
 router.use('/blogs', blogsRouter);
+router.use('/job-posts', jobPostRouter);
+router.use('/job-applications', jobApplicationRouter);
 
 // API Root endpoint
 router.get('/', (req: Request, res: Response) => {

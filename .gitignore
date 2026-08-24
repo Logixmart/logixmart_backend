@@ -37,6 +37,12 @@ Thumbs.db
 # Uploads and user media
 uploads/*
 !uploads/.gitkeep
+!uploads/blogs/
+uploads/blogs/*
+!uploads/blogs/.gitkeep
+!uploads/resumes/
+uploads/resumes/*
+!uploads/resumes/.gitkeep
 
 branch_structure.json
 temp_auto_push.bat

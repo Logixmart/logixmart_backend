@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: logixmart-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: logixmart
+      POSTGRES_PASSWORD: logixmart
+      POSTGRES_DB: logixmart
+    ports:
+      - "5432:5432"
+    volumes:
+      - logixmart_pgdata:/var/lib/postgresql/data
+
+volumes:
+  logixmart_pgdata:

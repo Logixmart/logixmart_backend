@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "JobPost" ADD COLUMN IF NOT EXISTS "responsibilities" TEXT[] DEFAULT ARRAY[]::TEXT[];
+ALTER TABLE "JobPost" ADD COLUMN IF NOT EXISTS "qualifications" TEXT[] DEFAULT ARRAY[]::TEXT[];
