@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
+import {
+  backupInBackground,
+  backupJobPosts,
+} from "../lib/jsonBackup";
 
 /**
  * Create Job Post
@@ -13,10 +17,8 @@ export const createJobPost = async (
     const {
       title,
       description,
-      companyName,
       location,
       employmentType,
-      salary,
       experience,
       skills,
       responsibilities,
@@ -41,22 +43,12 @@ export const createJobPost = async (
       return;
     }
 
-    if (!companyName?.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Company name is required",
-      });
-      return;
-    }
-
     const job = await prisma.jobPost.create({
       data: {
         title: title.trim(),
         description: description.trim(),
-        companyName: companyName.trim(),
         location: location?.trim() || null,
         employmentType: employmentType?.trim() || null,
-        salary: salary?.trim() || null,
         experience: experience?.trim() || null,
         skills: normalizeStringList(skills),
         responsibilities: normalizeStringList(responsibilities),
@@ -64,6 +56,8 @@ export const createJobPost = async (
         isActive: Boolean(isActive),
       },
     });
+
+    backupInBackground(backupJobPosts, "jobPosts");
 
     res.status(201).json({
       success: true,
@@ -110,12 +104,6 @@ export const getJobPosts = async (
       where.OR = [
         {
           title: {
-            contains: search.trim(),
-            mode: "insensitive",
-          },
-        },
-        {
-          companyName: {
             contains: search.trim(),
             mode: "insensitive",
           },
@@ -223,10 +211,8 @@ export const updateJobPost = async (
     const {
       title,
       description,
-      companyName,
       location,
       employmentType,
-      salary,
       experience,
       skills,
       responsibilities,
@@ -259,20 +245,12 @@ export const updateJobPost = async (
       updateData.description = description.trim();
     }
 
-    if (companyName !== undefined) {
-      updateData.companyName = companyName.trim();
-    }
-
     if (location !== undefined) {
       updateData.location = location?.trim() || null;
     }
 
     if (employmentType !== undefined) {
       updateData.employmentType = employmentType?.trim() || null;
-    }
-
-    if (salary !== undefined) {
-      updateData.salary = salary?.trim() || null;
     }
 
     if (experience !== undefined) {
@@ -301,6 +279,8 @@ export const updateJobPost = async (
       },
       data: updateData,
     });
+
+    backupInBackground(backupJobPosts, "jobPosts");
 
     res.status(200).json({
       success: true,
@@ -354,6 +334,8 @@ export const deleteJobPost = async (
         isActive: false,
       },
     });
+
+    backupInBackground(backupJobPosts, "jobPosts");
 
     res.status(200).json({
       success: true,

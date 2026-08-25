@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
+import {
+  backupInBackground,
+  backupJobApplications,
+} from '../lib/jsonBackup';
 import { fileStorage } from '../services/storage';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,7 +28,6 @@ const ALLOWED_STATUSES: ApplicationStatus[] = [
 const JOB_SELECT = {
   id: true,
   title: true,
-  companyName: true,
   location: true,
 } as const;
 
@@ -43,6 +46,18 @@ async function cleanupResume(file?: Express.Multer.File): Promise<void> {
   await fileStorage.deleteIfExists(
     fileStorage.publicPathForFilename(file.filename, 'resumes')
   );
+}
+
+function withPublicUrls<T extends { resumeUrl: string | null }>(
+  application: T
+): T {
+  if (!application.resumeUrl) {
+    return application;
+  }
+  return {
+    ...application,
+    resumeUrl: fileStorage.getPublicUrl(application.resumeUrl),
+  };
 }
 
 function isPrismaUniqueError(error: unknown): boolean {
@@ -137,6 +152,8 @@ export const createJobApplication = async (
           resumeUrl,
         },
       });
+
+      backupInBackground(backupJobApplications, 'jobApplications');
 
       res.status(201).json({
         success: true,
@@ -238,7 +255,7 @@ export const getJobApplications = async (
 
     res.status(200).json({
       success: true,
-      data: applications,
+      data: applications.map(withPublicUrls),
       pagination: {
         page: pageNumber,
         limit: limitNumber,
@@ -281,7 +298,7 @@ export const getJobApplicationById = async (
 
     res.status(200).json({
       success: true,
-      data: application,
+      data: withPublicUrls(application),
     });
   } catch (error) {
     console.error('Get Job Application Error:', error);
@@ -328,10 +345,12 @@ export const updateJobApplicationStatus = async (
       include: { job: { select: JOB_SELECT } },
     });
 
+    backupInBackground(backupJobApplications, 'jobApplications');
+
     res.status(200).json({
       success: true,
       message: 'Application status updated successfully',
-      data: updated,
+      data: withPublicUrls(updated),
     });
   } catch (error) {
     console.error('Update Application Status Error:', error);
@@ -364,6 +383,8 @@ export const deleteJobApplication = async (
 
     await prisma.jobApplication.delete({ where: { id } });
     await fileStorage.deleteIfExists(existing.resumeUrl);
+
+    backupInBackground(backupJobApplications, 'jobApplications');
 
     res.status(200).json({
       success: true,

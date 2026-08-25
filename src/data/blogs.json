@@ -3,9 +3,9 @@
     "id": "c0f13cfc-f4e7-4dc9-8667-1239ffee5e95",
     "title": "App Development Trends in 2026",
     "description": "Explore the latest trends, technologies, and best practices shaping modern mobile and web application development.",
-    "imageUrl": "/uploads/1787309133497-873655327.jpg",
+    "imageUrl": "/uploads/blogs/1787657487467-702623261.jpg",
     "createdAt": "2026-08-21T10:45:33.534Z",
-    "updatedAt": "2026-08-21T10:45:33.534Z"
+    "updatedAt": "2026-08-25T11:31:27.487Z"
   },
   {
     "id": "ed151390-2812-4043-8f03-62c44832ed33",
@@ -13,14 +13,14 @@
     "description": "Learn how modern development practices, clean architecture, and scalable technologies help create reliable mobile applications.",
     "imageUrl": "/uploads/1787558312250-915274900.jpg",
     "createdAt": "2026-08-21T10:50:42.652Z",
-    "updatedAt": "2026-08-24T07:58:32.274Z"
+    "updatedAt": "2026-08-25T11:31:34.099Z"
   },
   {
     "id": "a4845202-c17b-4cae-8234-200d532be024",
     "title": "The Rise of Cloud Computing",
     "description": "Discover how cloud technology is helping businesses scale faster, reduce infrastructure costs, and build more flexible digital products.",
+    "imageUrl": "/uploads/1787558350298-857082026.jpg",
     "createdAt": "2026-08-24T07:58:59.196Z",
-    "updatedAt": "2026-08-24T07:59:10.308Z",
-    "imageUrl": "/uploads/1787558350298-857082026.jpg"
+    "updatedAt": "2026-08-24T07:59:10.308Z"
   }
 ]

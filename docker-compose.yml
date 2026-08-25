@@ -11,6 +11,34 @@ services:
       - "5432:5432"
     volumes:
       - logixmart_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logixmart -d logixmart"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: logixmart-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://logixmart:logixmart@postgres:5432/logixmart?schema=public
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:5000}
+      # Host path ./uploads is mounted at /app/uploads so blog/resume files persist & serve
+      UPLOAD_DIR: uploads
+      JWT_SECRET: ${JWT_SECRET:-supersecretjwtkeyforadminpanel}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@logixmart.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-LogixmartAdmin2026!}
+    volumes:
+      # Persist and serve local upload files inside the container
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   logixmart_pgdata:

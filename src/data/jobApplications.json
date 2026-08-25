@@ -1,0 +1,44 @@
+[
+  {
+    "id": "cmt8cmkp10002ttnd8b5ojpzs",
+    "jobId": "cmt8c8mra0000ttnd0lx9xf3s",
+    "applicantName": "Alex",
+    "email": "alex@yopmail.com",
+    "phone": "+916284250069",
+    "resumeUrl": "/uploads/resumes/1787643235874-35244002.pdf",
+    "coverLetter": "As a Senior React Native Developer with over 5 years of experience shipping high-performance mobile apps, I excel at building scalable cross-platform architectures and bridging native modules for iOS and Android. I have a proven track record of optimizing application performance, leading engineering teams, and collaborating across design and backend squads to deliver seamless user experiences. Your current mobile initiatives perfectly align with my expertise in TypeScript, state management, and",
+    "portfolioUrl": "https://yourportfolio.com",
+    "linkedinUrl": "https://linkedin.com",
+    "status": "REVIEWING",
+    "createdAt": "2026-08-25T07:33:55.909Z",
+    "updatedAt": "2026-08-25T07:35:13.908Z"
+  },
+  {
+    "id": "cmt8demnt0005ttndaeehw0aj",
+    "jobId": "cmt8d8ww00003ttndejhngjx2",
+    "applicantName": "Jone",
+    "email": "jone@yopmail.com",
+    "phone": "+911234567890",
+    "resumeUrl": "/uploads/resumes/1787644544812-934304125.pdf",
+    "coverLetter": "As a motivated Junior React Native Developer with a solid foundation in JavaScript and cross-platform mobile development, I am eager to contribute to your engineering team. I have hands-on experience building clean UI components, integrating REST APIs, and collaborating through Git workflows to deploy functional mobile screens. I am highly adaptable, passionate about mastering mobile architecture, and excited to learn from your senior engineers while delivering immediate value. Thank you for you",
+    "portfolioUrl": "https://github.com",
+    "linkedinUrl": "https://linkedin.com",
+    "status": "PENDING",
+    "createdAt": "2026-08-25T07:55:44.825Z",
+    "updatedAt": "2026-08-25T07:55:44.825Z"
+  },
+  {
+    "id": "cmt8l2gc10002tt2frg6qs6s9",
+    "jobId": "cmt8kxvgg0000tt2fo8fp13a6",
+    "applicantName": "Ava",
+    "email": "ava@yopmail.com",
+    "phone": "+911234567890",
+    "resumeUrl": "/uploads/resumes/1787657413665-798278353.pdf",
+    "coverLetter": "I am excited to apply for the Node.js Developer role. I build scalable backend architectures and high-performance APIs using Node.js, Express/NestJS, and Docker.Key Strengths:Databases: Skilled in PostgreSQL and MongoDB.DevOps: Proficient in Docker containerization and CI/CD.Quality: Focused on clean code and Jest testing.View my work via LinkedIn and Portfolio. I look forward to discussing how I can help your team.",
+    "portfolioUrl": "https://dummyporfoliolink.dev",
+    "linkedinUrl": "https://linkedin.com",
+    "status": "INTERVIEW",
+    "createdAt": "2026-08-25T11:30:13.681Z",
+    "updatedAt": "2026-08-25T11:30:40.332Z"
+  }
+]

@@ -11,7 +11,10 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
+    "db:backup": "ts-node --transpile-only scripts/backup-json.ts",
     "db:up": "docker compose up -d postgres",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -23,8 +26,10 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
@@ -32,6 +37,7 @@
     "multer": "^2.2.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",

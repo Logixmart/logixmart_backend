@@ -25,10 +25,8 @@ model JobPost {
   id               String   @id @default(cuid())
   title            String
   description      String
-  companyName      String
   location         String?
   employmentType   String?
-  salary           String?
   experience       String?
   skills           String[] @default([])
   responsibilities String[] @default([])
@@ -74,5 +72,37 @@ model JobApplication {
   @@index([jobId])
   @@index([email])
   @@index([status])
+  @@index([createdAt])
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([email])
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+model Admin {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(ADMIN)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([role])
   @@index([createdAt])
 }

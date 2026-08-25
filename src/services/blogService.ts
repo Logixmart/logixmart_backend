@@ -1,3 +1,4 @@
+import { backupBlogs, backupInBackground } from '../lib/jsonBackup';
 import prisma from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { fileStorage, FileStorage } from './storage';
@@ -28,12 +29,14 @@ export interface UpdateBlogInput {
   uploadedFilePath?: string;
 }
 
-function toBlogDto(blog: Blog): BlogDto {
+function toBlogDto(blog: Blog, storage: FileStorage = fileStorage): BlogDto {
   return {
     id: blog.id,
     title: blog.title,
     description: blog.description,
-    ...(blog.imageUrl ? { imageUrl: blog.imageUrl } : {}),
+    ...(blog.imageUrl
+      ? { imageUrl: storage.getPublicUrl(blog.imageUrl) }
+      : {}),
     createdAt: blog.createdAt.toISOString(),
     updatedAt: blog.updatedAt.toISOString(),
   };
@@ -46,7 +49,7 @@ export class BlogService {
     const blogs = await prisma.blog.findMany({
       orderBy: { createdAt: 'desc' },
     });
-    return blogs.map(toBlogDto);
+    return blogs.map((blog) => toBlogDto(blog, this.storage));
   }
 
   async getById(id: string): Promise<BlogDto> {
@@ -54,7 +57,7 @@ export class BlogService {
     if (!blog) {
       throw new AppError('Blog not found', 404);
     }
-    return toBlogDto(blog);
+    return toBlogDto(blog, this.storage);
   }
 
   async create(input: CreateBlogInput): Promise<BlogDto> {
@@ -78,7 +81,8 @@ export class BlogService {
           imageUrl: imageUrl ?? null,
         },
       });
-      return toBlogDto(blog);
+      backupInBackground(backupBlogs, 'blogs');
+      return toBlogDto(blog, this.storage);
     } catch (error) {
       await this.cleanupUploadedFile(input.uploadedFilePath);
       throw error;
@@ -127,7 +131,8 @@ export class BlogService {
         await this.storage.deleteIfExists(previousImageUrl);
       }
 
-      return toBlogDto(blog);
+      backupInBackground(backupBlogs, 'blogs');
+      return toBlogDto(blog, this.storage);
     } catch (error) {
       await this.cleanupUploadedFile(input.uploadedFilePath);
       throw error;
@@ -142,6 +147,7 @@ export class BlogService {
 
     await prisma.blog.delete({ where: { id } });
     await this.storage.deleteIfExists(existing.imageUrl);
+    backupInBackground(backupBlogs, 'blogs');
   }
 
   private async cleanupUploadedFile(filePath?: string): Promise<void> {

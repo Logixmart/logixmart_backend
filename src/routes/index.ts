@@ -3,6 +3,7 @@ import adminRouter from './admin';
 import blogsRouter from './blogs';
 import jobPostRouter from './jobPost.routes';
 import jobApplicationRouter from './jobApplication.routes';
+import contactRouter from './contact.routes';
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.use('/admin', adminRouter);
 router.use('/blogs', blogsRouter);
 router.use('/job-posts', jobPostRouter);
 router.use('/job-applications', jobApplicationRouter);
+router.use('/contact', contactRouter);
 
 // API Root endpoint
 router.get('/', (req: Request, res: Response) => {

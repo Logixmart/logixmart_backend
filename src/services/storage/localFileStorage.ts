@@ -21,7 +21,9 @@ export class LocalFileStorage implements FileStorage {
     if (storedPath.startsWith('http://') || storedPath.startsWith('https://')) {
       return storedPath;
     }
-    return storedPath.startsWith('/') ? storedPath : `/${storedPath}`;
+    const relative = storedPath.startsWith('/') ? storedPath : `/${storedPath}`;
+    const base = config.apiBaseUrl.replace(/\/$/, '');
+    return `${base}${relative}`;
   }
 
   publicPathForFilename(filename: string, folder: 'blogs' | 'resumes' = 'blogs'): string {

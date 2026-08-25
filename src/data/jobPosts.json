@@ -1,0 +1,127 @@
+[
+  {
+    "id": "cmt8c8mra0000ttnd0lx9xf3s",
+    "title": "Senior React Native Developer",
+    "description": "We are looking for a Senior React Native Developer to lead the design, development, and maintenance of our high-performance mobile applications.",
+    "location": "Remote / Hybrid / On-site",
+    "employmentType": "Full-time",
+    "experience": "5+ years of software development (3+ years dedicated to React Native)",
+    "skills": [
+      "React Native",
+      "ReactJS",
+      "JavaScript (ES6+)",
+      "TypeScript",
+      "Swift",
+      "Java/Kotlin",
+      "Git",
+      "Jest",
+      "Detox",
+      "React Native Debugger",
+      "Component-driven design",
+      "Hook-based workflows",
+      "REST/GraphQL",
+      "App Store Connect",
+      "Google Play Console",
+      "Fastlane"
+    ],
+    "responsibilities": [
+      "1.Develop Applications: Build robust clean and highly responsive mobile apps for iOS and Android using React Native.",
+      "Architect Code: Design scalable mobile architectures and write reusable maintainable code components.",
+      "Optimize Performance: Troubleshoot profile and optimize application performance animations and load times.",
+      "Bridge Native Code: Write and integrate custom Native Modules in Swift/Objective-C or Java/Kotlin when required.",
+      "Lead & Mentor: Review team code mentor junior developers and establish engineering best practices.",
+      "Collaborate: Partner closely with UI/UX designers product managers and backend engineers to ship new features."
+    ],
+    "qualifications": [
+      "Education: Bachelor’s degree in Computer Science Engineering or a related technical field (or equivalent practical experience).",
+      "Technical Expertise: Proven track record of shipping successful apps to the Apple App Store and Google Play Store.",
+      "State Management: Deep understanding of state management libraries like Redux MobX or React Context API.",
+      "API Integration: Strong experience consuming RESTful APIs GraphQL and handling offline data storage.",
+      "Testing: Proficiency in writing unit integration and component tests using tools like Jest and Detox.",
+      "CI/CD Pipelines: Experience setting up mobile deployment pipelines using Fastlane Bitrise or GitHub Actions"
+    ],
+    "isActive": true,
+    "isDeleted": false,
+    "createdAt": "2026-08-25T07:23:05.394Z",
+    "updatedAt": "2026-08-25T07:37:11.846Z"
+  },
+  {
+    "id": "cmt8d8ww00003ttndejhngjx2",
+    "title": "Junior React Native Developer",
+    "description": "We are looking for a motivated Junior React Native Developer to join our mobile engineering team and help build cross-platform applications for iOS and Android.",
+    "location": "Mohali",
+    "employmentType": "Full-time",
+    "experience": "1-3 years",
+    "skills": [
+      "React Native",
+      "ReactJS",
+      "JavaScript",
+      "TypeScript",
+      "Git",
+      "GitHub",
+      "Android Studio",
+      "Xcode (Basic)",
+      "Flexbox",
+      "StyleSheet",
+      "Styled Components"
+    ],
+    "responsibilities": [
+      "Feature Development: Write clean maintainable JavaScript/TypeScript code to implement mobile app features.",
+      "UI Implementation: Translate UI/UX design wireprints into functional responsive mobile screens.",
+      "Bug Fixing: Debug issues fix crashes and optimize code to improve app stability.",
+      "API Integration: Connect mobile frontends with RESTful backend APIs and third-party services.",
+      "Team Collaboration: Participate in code reviews daily standups and learn from senior developers."
+    ],
+    "qualifications": [
+      "Education: Degree in Computer Science Bootcamp graduate or equivalent practical experience.",
+      "Technical Skills: Solid understanding of JavaScript (ES6+) React and fundamental mobile concepts.",
+      "State Management: Basic knowledge of React Context API Redux or similar state solutions.",
+      "Tools: Experience using Git for version control and familiarity with npm/yarn.",
+      "Soft Skills: Eagerness to learn strong problem-solving skills and good communication."
+    ],
+    "isActive": true,
+    "isDeleted": false,
+    "createdAt": "2026-08-25T07:51:18.117Z",
+    "updatedAt": "2026-08-25T07:51:51.590Z"
+  },
+  {
+    "id": "cmt8kxvgg0000tt2fo8fp13a6",
+    "title": "Node.js Developer",
+    "description": "We are looking for a skilled Node.js Developer to join our engineering team. You will be responsible for managing the interchange of data between our servers and users. Your primary focus will be the development of all server-side logic, definition and maintenance of the central database, and ensuring high performance and responsiveness to requests from the front-end.",
+    "location": "Mohali",
+    "employmentType": "Full-time",
+    "experience": "2-5 years",
+    "skills": [
+      "JavaScript & TypeScript",
+      "Node.js ecosystems",
+      "Express.js",
+      "NestJS",
+      "or Fastify",
+      "Asynchronous programming & closures",
+      "Event-driven architecture",
+      "RESTful APIs & GraphQL",
+      "SQL (PostgreSQL",
+      "MySQL)"
+    ],
+    "responsibilities": [
+      "Develop high-performance scalable backend applications using Node.js.Design and implement low-latency",
+      "highly available and performant applications.",
+      "Integrate user-facing elements developed by front-end developers with server-side logic.",
+      "Implement robust security and data protection measures.",
+      "Create and maintain database schemas that represent and support business processes.",
+      "Write clean reusable testable and efficient code.",
+      "Collaborate with cross-functional teams to define design and ship new features."
+    ],
+    "qualifications": [
+      "Bachelor’s degree in Computer Science Engineering or a related technical field (or equivalent practical experience).",
+      "Proven professional experience as a Backend or Node.js Developer.",
+      "Demonstrated experience building and deploying scalable high-performance applications.",
+      "Strong track record of designing implementing and securing relational and non-relational databases.",
+      "Experience collaborating with cross-functional product and engineering teams in an Agile environment."
+    ],
+    "isActive": true,
+    "isDeleted": false,
+    "createdAt": "2026-08-25T11:26:39.971Z",
+    "updatedAt": "2026-08-25T11:26:39.971Z"
+  }
+]
