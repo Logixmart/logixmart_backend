@@ -13,6 +13,14 @@ export const config = {
   port: process.env.PORT || 5000,
   nodeEnv: process.env.NODE_ENV || 'development',
   jwtSecret: process.env.JWT_SECRET || 'supersecretjwtkeyforadminpanel',
+  jwtRefreshSecret:
+    process.env.JWT_REFRESH_SECRET ||
+    process.env.JWT_SECRET ||
+    'supersecretjwtkeyforadminpanel',
+  /** Access token lifetime (e.g. 15m, 1h) */
+  jwtAccessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '1h',
+  /** Refresh token lifetime (e.g. 7d, 30d) */
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   adminEmail: process.env.ADMIN_EMAIL || 'admin@logixmart.com',
   adminPassword: process.env.ADMIN_PASSWORD || 'LogixmartAdmin2026!',
   databaseUrl: process.env.DATABASE_URL || '',

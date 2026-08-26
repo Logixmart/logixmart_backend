@@ -5,6 +5,13 @@ import { AdminRole } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { config } from '../config';
 import { AuthenticatedRequest } from '../middlewares/auth';
+import {
+  hashToken,
+  refreshTokenExpiryDate,
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from '../lib/adminTokens';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ADMIN_SAFE_SELECT = {
@@ -16,12 +23,59 @@ const ADMIN_SAFE_SELECT = {
   updatedAt: true,
 } as const;
 
+type AdminAuthRecord = {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  refreshTokenHash: string | null;
+  refreshTokenExpiresAt: Date | null;
+};
+
+const ADMIN_AUTH_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  refreshTokenHash: true,
+  refreshTokenExpiresAt: true,
+} as const;
+
 function optionalTrim(value: unknown): string | null {
   if (value === undefined || value === null) {
     return null;
   }
   const trimmed = String(value).trim();
   return trimmed ? trimmed : null;
+}
+
+async function findAdminForAuth(
+  id: string
+): Promise<AdminAuthRecord | null> {
+  return prisma.admin.findUnique({
+    where: { id },
+    select: ADMIN_AUTH_SELECT,
+  }) as Promise<AdminAuthRecord | null>;
+}
+
+async function issueTokenPair(admin: {
+  id: string;
+  email: string;
+  name: string;
+  role: AdminRole;
+}): Promise<{ accessToken: string; refreshToken: string }> {
+  const accessToken = signAccessToken(admin);
+  const refreshToken = signRefreshToken(admin);
+
+  await prisma.admin.update({
+    where: { id: admin.id },
+    data: {
+      refreshTokenHash: hashToken(refreshToken),
+      refreshTokenExpiresAt: refreshTokenExpiryDate(),
+    },
+  });
+
+  return { accessToken, refreshToken };
 }
 
 /**
@@ -65,21 +119,14 @@ export const login = async (
       return;
     }
 
-    const token = jwt.sign(
-      {
-        id: admin.id,
-        email: admin.email,
-        name: admin.name,
-        role: admin.role,
-      },
-      config.jwtSecret,
-      { expiresIn: '24h' }
-    );
+    const { accessToken, refreshToken } = await issueTokenPair(admin);
 
     res.status(200).json({
       success: true,
       message: 'Login successful',
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
       admin: {
         id: admin.id,
         name: admin.name,
@@ -93,14 +140,144 @@ export const login = async (
 };
 
 /**
+ * Refresh access token
+ * POST /api/admin/refresh
+ * Body: { refreshToken }
+ */
+export const refresh = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const refreshToken = String(req.body.refreshToken ?? '').trim();
+    if (!refreshToken) {
+      res.status(400).json({
+        success: false,
+        message: 'Refresh token is required',
+      });
+      return;
+    }
+
+    let payload: { id: string; email: string };
+    try {
+      payload = verifyRefreshToken(refreshToken);
+    } catch {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+      return;
+    }
+
+    const admin = await findAdminForAuth(payload.id);
+    if (!admin || admin.email !== payload.email) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+      return;
+    }
+
+    const incomingHash = hashToken(refreshToken);
+    if (
+      !admin.refreshTokenHash ||
+      admin.refreshTokenHash !== incomingHash ||
+      !admin.refreshTokenExpiresAt ||
+      admin.refreshTokenExpiresAt.getTime() < Date.now()
+    ) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+      return;
+    }
+
+    const tokens = await issueTokenPair(admin);
+
+    res.status(200).json({
+      success: true,
+      message: 'Token refreshed successfully',
+      token: tokens.accessToken,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      admin: {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
+  } catch (error) {
+    console.error('Refresh Token Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to refresh token',
+    });
+  }
+};
+
+/**
  * Admin logout
  * POST /api/admin/logout
+ * Optional body: { refreshToken } — clears stored refresh token
  */
-export const logout = (_req: Request, res: Response): void => {
-  res.status(200).json({
-    success: true,
-    message: 'Logged out successfully. Please discard the authentication token.',
-  });
+export const logout = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const refreshToken = String(req.body.refreshToken ?? '').trim();
+
+    if (refreshToken) {
+      try {
+        const payload = verifyRefreshToken(refreshToken);
+        const admin = await findAdminForAuth(payload.id);
+        if (
+          admin &&
+          admin.refreshTokenHash === hashToken(refreshToken)
+        ) {
+          await prisma.admin.update({
+            where: { id: admin.id },
+            data: {
+              refreshTokenHash: null,
+              refreshTokenExpiresAt: null,
+            },
+          });
+        }
+      } catch {
+        // Ignore invalid refresh tokens on logout
+      }
+    } else if (req.headers.authorization?.startsWith('Bearer ')) {
+      const accessToken = req.headers.authorization.slice(7);
+      try {
+        const decoded = jwt.verify(accessToken, config.jwtSecret) as {
+          id?: string;
+        };
+        if (decoded.id) {
+          await prisma.admin.update({
+            where: { id: decoded.id },
+            data: {
+              refreshTokenHash: null,
+              refreshTokenExpiresAt: null,
+            },
+          });
+        }
+      } catch {
+        // Ignore invalid access tokens on logout
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully. Please discard the authentication tokens.',
+    });
+  } catch (error) {
+    console.error('Logout Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to logout',
+    });
+  }
 };
 
 /**

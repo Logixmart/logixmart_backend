@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   login,
   logout,
+  refresh,
   listAdmins,
   createAdmin,
   updateAdmin,
@@ -15,6 +16,7 @@ import {
 const router = Router();
 
 router.post('/login', login);
+router.post('/refresh', refresh);
 router.post('/logout', logout);
 
 router.get('/users', authenticateAdmin, requireSuperAdmin, listAdmins);

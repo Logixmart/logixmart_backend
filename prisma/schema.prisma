@@ -89,19 +89,35 @@ model ContactSubmission {
   @@index([email])
 }
 
+model ClientReview {
+  id           String   @id @default(cuid())
+  clientName   String
+  companyName  String?
+  email        String
+  designation  String?
+  message      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([email])
+}
+
 enum AdminRole {
   SUPER_ADMIN
   ADMIN
 }
 
 model Admin {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         AdminRole @default(ADMIN)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  passwordHash          String
+  role                  AdminRole @default(ADMIN)
+  refreshTokenHash      String?
+  refreshTokenExpiresAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([role])
   @@index([createdAt])

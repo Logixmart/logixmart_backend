@@ -40,5 +40,19 @@
     "status": "INTERVIEW",
     "createdAt": "2026-08-25T11:30:13.681Z",
     "updatedAt": "2026-08-25T11:30:40.332Z"
+  },
+  {
+    "id": "cmt9o1fol0001ttel0vy4lpth",
+    "jobId": "cmt8kxvgg0000tt2fo8fp13a6",
+    "applicantName": "Alex Morgan",
+    "email": "alex.morgan@example.com",
+    "phone": "+919876543210",
+    "resumeUrl": "/uploads/resumes/1787722871165-915551913.pdf",
+    "coverLetter": "I am excited to apply for this position. I have experience developing scalable applications, working with modern technologies, and collaborating with cross-functional teams. I believe my technical skills and problem-solving abilities make me a strong candidate for this role.",
+    "portfolioUrl": "https://alex-morgan.example.com",
+    "linkedinUrl": "https://www.linkedin.com/in/alex-morgan-example",
+    "status": "PENDING",
+    "createdAt": "2026-08-26T05:41:11.205Z",
+    "updatedAt": "2026-08-26T05:41:11.205Z"
   }
 ]
