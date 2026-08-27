@@ -65,6 +65,22 @@ export const upload = multer({
   fileFilter: imageFilter,
 });
 
+const ourWorkImageStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    ensureDir(config.ourWorksUploadDir);
+    cb(null, config.ourWorksUploadDir);
+  },
+  filename: (_req, file, cb) => {
+    cb(null, uniqueFilename(file.originalname, IMAGE_EXTENSIONS));
+  },
+});
+
+export const ourWorkUpload = multer({
+  storage: ourWorkImageStorage,
+  limits: { fileSize: FILE_SIZE_LIMIT },
+  fileFilter: imageFilter,
+});
+
 const resumeStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     ensureDir(config.resumesUploadDir);

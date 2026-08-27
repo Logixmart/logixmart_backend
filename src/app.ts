@@ -34,11 +34,14 @@ app.use(express.urlencoded({ extended: true }));
 const uploadDir = config.uploadsRoot;
 const blogsUploadDir = config.blogsUploadDir;
 const resumesUploadDir = config.resumesUploadDir;
-[uploadDir, blogsUploadDir, resumesUploadDir].forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+const ourWorksUploadDir = config.ourWorksUploadDir;
+[uploadDir, blogsUploadDir, resumesUploadDir, ourWorksUploadDir].forEach(
+  (dir) => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
-});
+);
 
 // Serve uploaded static files publicly at /uploads/*
 app.use('/uploads', express.static(uploadDir));

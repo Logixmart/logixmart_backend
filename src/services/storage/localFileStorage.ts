@@ -5,7 +5,16 @@ import { FileStorage } from './types';
 
 const BLOGS_PUBLIC_PREFIX = '/uploads/blogs/';
 const RESUMES_PUBLIC_PREFIX = '/uploads/resumes/';
+const OUR_WORKS_PUBLIC_PREFIX = '/uploads/our-works/';
 const LEGACY_PUBLIC_PREFIX = '/uploads/';
+
+type UploadFolder = 'blogs' | 'resumes' | 'our-works';
+
+const FOLDER_PREFIX: Record<UploadFolder, string> = {
+  blogs: BLOGS_PUBLIC_PREFIX,
+  resumes: RESUMES_PUBLIC_PREFIX,
+  'our-works': OUR_WORKS_PUBLIC_PREFIX,
+};
 
 export class LocalFileStorage implements FileStorage {
   private readonly uploadsRoot: string;
@@ -26,10 +35,12 @@ export class LocalFileStorage implements FileStorage {
     return `${base}${relative}`;
   }
 
-  publicPathForFilename(filename: string, folder: 'blogs' | 'resumes' = 'blogs'): string {
+  publicPathForFilename(
+    filename: string,
+    folder: UploadFolder = 'blogs'
+  ): string {
     const safeName = path.basename(filename);
-    const prefix = folder === 'resumes' ? RESUMES_PUBLIC_PREFIX : BLOGS_PUBLIC_PREFIX;
-    return `${prefix}${safeName}`;
+    return `${FOLDER_PREFIX[folder]}${safeName}`;
   }
 
   async deleteIfExists(storedPath: string | null | undefined): Promise<void> {
@@ -57,6 +68,7 @@ export class LocalFileStorage implements FileStorage {
     if (
       !normalized.startsWith(BLOGS_PUBLIC_PREFIX) &&
       !normalized.startsWith(RESUMES_PUBLIC_PREFIX) &&
+      !normalized.startsWith(OUR_WORKS_PUBLIC_PREFIX) &&
       !this.isLegacyUploadPath(normalized)
     ) {
       return null;
@@ -87,7 +99,8 @@ export class LocalFileStorage implements FileStorage {
     }
     if (
       normalized.startsWith(BLOGS_PUBLIC_PREFIX) ||
-      normalized.startsWith(RESUMES_PUBLIC_PREFIX)
+      normalized.startsWith(RESUMES_PUBLIC_PREFIX) ||
+      normalized.startsWith(OUR_WORKS_PUBLIC_PREFIX)
     ) {
       return false;
     }

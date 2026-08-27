@@ -14,5 +14,8 @@ export interface FileStorage {
   /**
    * Build the public relative path for a file under uploads/<folder>/.
    */
-  publicPathForFilename(filename: string, folder?: 'blogs' | 'resumes'): string;
+  publicPathForFilename(
+    filename: string,
+    folder?: 'blogs' | 'resumes' | 'our-works'
+  ): string;
 }

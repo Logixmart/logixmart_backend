@@ -28,4 +28,5 @@ export const config = {
   uploadsRoot,
   blogsUploadDir: path.join(uploadsRoot, 'blogs'),
   resumesUploadDir: path.join(uploadsRoot, 'resumes'),
+  ourWorksUploadDir: path.join(uploadsRoot, 'our-works'),
 };

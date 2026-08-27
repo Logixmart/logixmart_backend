@@ -96,12 +96,11 @@
       "Node.js ecosystems",
       "Express.js",
       "NestJS",
-      "or Fastify",
+      "Fastify",
       "Asynchronous programming & closures",
       "Event-driven architecture",
       "RESTful APIs & GraphQL",
-      "SQL (PostgreSQL",
-      "MySQL)"
+      "SQL (PostgreSQL-MySQL)"
     ],
     "responsibilities": [
       "Develop high-performance scalable backend applications using Node.js.Design and implement low-latency",
@@ -122,6 +121,6 @@
     "isActive": true,
     "isDeleted": false,
     "createdAt": "2026-08-25T11:26:39.971Z",
-    "updatedAt": "2026-08-25T11:26:39.971Z"
+    "updatedAt": "2026-08-27T04:38:15.575Z"
   }
 ]

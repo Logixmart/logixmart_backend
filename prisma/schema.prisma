@@ -103,6 +103,22 @@ model ClientReview {
   @@index([email])
 }
 
+model OurWork {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+
+  projectUrl  String?
+  webAppUrl   String?
+
+  images      String[] @default([])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("our_works")
+}
+
 enum AdminRole {
   SUPER_ADMIN
   ADMIN
