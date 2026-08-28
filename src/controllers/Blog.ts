@@ -1,21 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
 import { blogService } from '../services/blogService';
+import { parsePaginationQuery } from '../utils/pagination';
 
 /**
  * Get all blogs
  * GET /api/blogs
  */
 export const getBlogs = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const blogs = await blogService.list();
+    const { page, limit } = parsePaginationQuery(req.query);
+    const result = await blogService.list(page, limit);
     res.status(200).json({
       success: true,
-      count: blogs.length,
-      data: blogs,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ourWorkService } from '../services/ourWorkService';
+import { parsePaginationQuery } from '../utils/pagination';
 
 function parseRemoveImages(value: unknown): string[] | undefined {
   if (value === undefined || value === null || value === '') {
@@ -40,16 +41,17 @@ function uploadedFiles(req: Request): Express.Multer.File[] {
  * GET /api/our-works
  */
 export const getOurWorks = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const works = await ourWorkService.list();
+    const { page, limit } = parsePaginationQuery(req.query);
+    const result = await ourWorkService.list(page, limit);
     res.status(200).json({
       success: true,
-      count: works.length,
-      data: works,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);

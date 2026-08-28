@@ -1,62 +1,78 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
+import compression from 'compression';
+import express, { Application, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import fs from 'fs';
 import apiRouter from './routes';
 import { errorHandler } from './middlewares/errorHandler';
+import { apiLimiter } from './middlewares/rateLimit';
 import { config } from './config';
+import { AppError } from './utils/AppError';
 
 const app: Application = express();
 
-// Set security HTTP headers (configure CORP to allow loading images cross-origin)
+const staticCacheOptions = {
+  maxAge: config.isProduction ? '7d' : 0,
+  etag: true,
+  immutable: config.isProduction,
+};
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
-// Enable CORS
-app.use(cors());
+app.use(compression({ threshold: 1024 }));
 
-// Development logging (skip health check logs to keep console clean)
 app.use(
-  morgan('dev', {
-    skip: (req) => req.originalUrl === '/api/health' || req.url === '/health',
+  cors(
+    config.corsOrigins.length
+      ? { origin: config.corsOrigins, credentials: true }
+      : undefined
+  )
+);
+
+app.use(
+  morgan(config.isProduction ? 'combined' : 'dev', {
+    skip: (req) =>
+      req.originalUrl === '/api/health' || req.url === '/health',
   })
 );
 
-// Parse incoming request body
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Ensure upload directories exist
-const uploadDir = config.uploadsRoot;
-const blogsUploadDir = config.blogsUploadDir;
-const resumesUploadDir = config.resumesUploadDir;
-const ourWorksUploadDir = config.ourWorksUploadDir;
-[uploadDir, blogsUploadDir, resumesUploadDir, ourWorksUploadDir].forEach(
-  (dir) => {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+const uploadDirs = [
+  config.uploadsRoot,
+  config.blogsUploadDir,
+  config.resumesUploadDir,
+  config.ourWorksUploadDir,
+];
+
+uploadDirs.forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
-);
-
-// Serve uploaded static files publicly at /uploads/*
-app.use('/uploads', express.static(uploadDir));
-
-// API Routes
-app.use('/api', apiRouter);
-
-// Handle undefined routes
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
-  res.status(404);
-  next(error);
 });
 
-// Global Error Handler
+// Public portfolio assets only — resumes are not exposed via static files
+app.use(
+  '/uploads/blogs',
+  express.static(config.blogsUploadDir, staticCacheOptions)
+);
+app.use(
+  '/uploads/our-works',
+  express.static(config.ourWorksUploadDir, staticCacheOptions)
+);
+
+app.use('/api', apiLimiter, apiRouter);
+
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  next(new AppError(`Not Found - ${req.originalUrl}`, 404));
+});
+
 app.use(errorHandler);
 
 export default app;

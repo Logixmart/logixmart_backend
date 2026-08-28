@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateAdmin } from '../middlewares/auth';
+import { applicationLimiter } from '../middlewares/rateLimit';
 import { resumeUpload } from '../middlewares/upload';
 import {
   createJobPost,
@@ -19,6 +20,7 @@ router.get('/:id', getJobPostById);
 // Public apply (multipart, optional resume)
 router.post(
   '/:jobId/applications',
+  applicationLimiter,
   resumeUpload.single('resume'),
   createJobApplication
 );

@@ -3,6 +3,7 @@ import {
   authenticateAdmin,
   requireSuperAdmin,
 } from '../middlewares/auth';
+import { contactLimiter } from '../middlewares/rateLimit';
 import {
   createContact,
   getContacts,
@@ -12,7 +13,7 @@ import { exportContacts } from '../controllers/Export';
 
 const router = Router();
 
-router.post('/', createContact);
+router.post('/', contactLimiter, createContact);
 router.get('/export', authenticateAdmin, requireSuperAdmin, exportContacts);
 router.get('/', authenticateAdmin, getContacts);
 router.delete('/:id', authenticateAdmin, deleteContact);

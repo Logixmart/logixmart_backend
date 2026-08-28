@@ -32,84 +32,57 @@ function ensureDir(dir: string): void {
   }
 }
 
-const imageStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    ensureDir(config.blogsUploadDir);
-    cb(null, config.blogsUploadDir);
-  },
-  filename: (_req, file, cb) => {
-    cb(null, uniqueFilename(file.originalname, IMAGE_EXTENSIONS));
-  },
-});
+function createImageUpload(destinationDir: string) {
+  return multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        ensureDir(destinationDir);
+        cb(null, destinationDir);
+      },
+      filename: (_req, file, cb) => {
+        cb(null, uniqueFilename(file.originalname, IMAGE_EXTENSIONS));
+      },
+    }),
+    limits: { fileSize: FILE_SIZE_LIMIT },
+    fileFilter: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const extOk = IMAGE_EXTENSIONS.has(ext);
+      const mimeOk = IMAGE_MIME_TYPES.has(file.mimetype.toLowerCase());
 
-const imageFilter = (
-  _req: Express.Request,
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-) => {
-  const ext = path.extname(file.originalname).toLowerCase();
-  const extOk = IMAGE_EXTENSIONS.has(ext);
-  const mimeOk = IMAGE_MIME_TYPES.has(file.mimetype.toLowerCase());
+      if (extOk && mimeOk) {
+        cb(null, true);
+        return;
+      }
 
-  if (extOk && mimeOk) {
-    cb(null, true);
-    return;
-  }
+      cb(new Error('Only images (jpeg, jpg, png, webp) are allowed'));
+    },
+  });
+}
 
-  cb(new Error('Only images (jpeg, jpg, png, webp) are allowed'));
-};
-
-export const upload = multer({
-  storage: imageStorage,
-  limits: { fileSize: FILE_SIZE_LIMIT },
-  fileFilter: imageFilter,
-});
-
-const ourWorkImageStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    ensureDir(config.ourWorksUploadDir);
-    cb(null, config.ourWorksUploadDir);
-  },
-  filename: (_req, file, cb) => {
-    cb(null, uniqueFilename(file.originalname, IMAGE_EXTENSIONS));
-  },
-});
-
-export const ourWorkUpload = multer({
-  storage: ourWorkImageStorage,
-  limits: { fileSize: FILE_SIZE_LIMIT },
-  fileFilter: imageFilter,
-});
-
-const resumeStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    ensureDir(config.resumesUploadDir);
-    cb(null, config.resumesUploadDir);
-  },
-  filename: (_req, file, cb) => {
-    cb(null, uniqueFilename(file.originalname, RESUME_EXTENSIONS));
-  },
-});
-
-const resumeFilter = (
-  _req: Express.Request,
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-) => {
-  const ext = path.extname(file.originalname).toLowerCase();
-  const extOk = RESUME_EXTENSIONS.has(ext);
-  const mimeOk = RESUME_MIME_TYPES.has(file.mimetype.toLowerCase());
-
-  if (extOk && mimeOk) {
-    cb(null, true);
-    return;
-  }
-
-  cb(new Error('Only resume files (pdf, doc, docx) are allowed'));
-};
+export const upload = createImageUpload(config.blogsUploadDir);
+export const ourWorkUpload = createImageUpload(config.ourWorksUploadDir);
 
 export const resumeUpload = multer({
-  storage: resumeStorage,
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      ensureDir(config.resumesUploadDir);
+      cb(null, config.resumesUploadDir);
+    },
+    filename: (_req, file, cb) => {
+      cb(null, uniqueFilename(file.originalname, RESUME_EXTENSIONS));
+    },
+  }),
   limits: { fileSize: FILE_SIZE_LIMIT },
-  fileFilter: resumeFilter,
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const extOk = RESUME_EXTENSIONS.has(ext);
+    const mimeOk = RESUME_MIME_TYPES.has(file.mimetype.toLowerCase());
+
+    if (extOk && mimeOk) {
+      cb(null, true);
+      return;
+    }
+
+    cb(new Error('Only resume files (pdf, doc, docx) are allowed'));
+  },
 });

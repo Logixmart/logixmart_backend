@@ -1,9 +1,5 @@
-import { Request, Response } from "express";
-import prisma from "../lib/prisma";
-import {
-  backupInBackground,
-  backupJobPosts,
-} from "../lib/jsonBackup";
+import { Request, Response, NextFunction } from 'express';
+import { jobPostService } from '../services/jobPostService';
 
 /**
  * Create Job Post
@@ -11,66 +7,18 @@ import {
  */
 export const createJobPost = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const {
-      title,
-      description,
-      location,
-      employmentType,
-      experience,
-      skills,
-      responsibilities,
-      qualifications,
-      isActive = true,
-    } = req.body;
-
-    // Validation
-    if (!title?.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Job title is required",
-      });
-      return;
-    }
-
-    if (!description?.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Job description is required",
-      });
-      return;
-    }
-
-    const job = await prisma.jobPost.create({
-      data: {
-        title: title.trim(),
-        description: description.trim(),
-        location: location?.trim() || null,
-        employmentType: employmentType?.trim() || null,
-        experience: experience?.trim() || null,
-        skills: normalizeStringList(skills),
-        responsibilities: normalizeStringList(responsibilities),
-        qualifications: normalizeStringList(qualifications),
-        isActive: Boolean(isActive),
-      },
-    });
-
-    backupInBackground(backupJobPosts, "jobPosts");
-
+    const job = await jobPostService.create(req.body);
     res.status(201).json({
       success: true,
-      message: "Job created successfully",
+      message: 'Job created successfully',
       data: job,
     });
   } catch (error) {
-    console.error("Create Job Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to create job",
-    });
+    next(error);
   }
 };
 
@@ -80,80 +28,18 @@ export const createJobPost = async (
  */
 export const getJobPosts = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const {
-      page = "1",
-      limit = "10",
-      search = "",
-      active,
-    } = req.query;
-
-    const pageNumber = Math.max(Number(page), 1);
-    const limitNumber = Math.min(Math.max(Number(limit), 1), 100);
-
-    const skip = (pageNumber - 1) * limitNumber;
-
-    const where: any = {
-      isDeleted: false,
-    };
-
-    // Search
-    if (search && typeof search === "string") {
-      where.OR = [
-        {
-          title: {
-            contains: search.trim(),
-            mode: "insensitive",
-          },
-        },
-        {
-          location: {
-            contains: search.trim(),
-            mode: "insensitive",
-          },
-        },
-      ];
-    }
-
-    // Active filter
-    if (active !== undefined) {
-      where.isActive = active === "true";
-    }
-
-    const [jobs, total] = await Promise.all([
-      prisma.jobPost.findMany({
-        where,
-        orderBy: {
-          createdAt: "desc",
-        },
-        skip,
-        take: limitNumber,
-      }),
-
-      prisma.jobPost.count({
-        where,
-      }),
-    ]);
-
+    const result = await jobPostService.list(req.query);
     res.status(200).json({
       success: true,
-      data: jobs,
-      pagination: {
-        page: pageNumber,
-        limit: limitNumber,
-        total,
-        totalPages: Math.ceil(total / limitNumber),
-      },
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
-    console.error("Get Jobs Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch jobs",
-    });
+    next(error);
   }
 };
 
@@ -163,37 +49,17 @@ export const getJobPosts = async (
  */
 export const getJobPostById = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const id = String(req.params.id);
-
-    const job = await prisma.jobPost.findFirst({
-      where: {
-        id,
-        isDeleted: false,
-      },
-    });
-
-    if (!job) {
-      res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
-      return;
-    }
-
+    const job = await jobPostService.getById(String(req.params.id));
     res.status(200).json({
       success: true,
       data: job,
     });
   } catch (error) {
-    console.error("Get Job Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch job",
-    });
+    next(error);
   }
 };
 
@@ -203,97 +69,21 @@ export const getJobPostById = async (
  */
 export const updateJobPost = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const id = String(req.params.id);
-
-    const {
-      title,
-      description,
-      location,
-      employmentType,
-      experience,
-      skills,
-      responsibilities,
-      qualifications,
-      isActive,
-    } = req.body;
-
-    const existingJob = await prisma.jobPost.findFirst({
-      where: {
-        id,
-        isDeleted: false,
-      },
+    const updatedJob = await jobPostService.update({
+      id: String(req.params.id),
+      ...req.body,
     });
-
-    if (!existingJob) {
-      res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
-      return;
-    }
-
-    const updateData: any = {};
-
-    if (title !== undefined) {
-      updateData.title = title.trim();
-    }
-
-    if (description !== undefined) {
-      updateData.description = description.trim();
-    }
-
-    if (location !== undefined) {
-      updateData.location = location?.trim() || null;
-    }
-
-    if (employmentType !== undefined) {
-      updateData.employmentType = employmentType?.trim() || null;
-    }
-
-    if (experience !== undefined) {
-      updateData.experience = experience?.trim() || null;
-    }
-
-    if (skills !== undefined) {
-      updateData.skills = normalizeStringList(skills);
-    }
-
-    if (responsibilities !== undefined) {
-      updateData.responsibilities = normalizeStringList(responsibilities);
-    }
-
-    if (qualifications !== undefined) {
-      updateData.qualifications = normalizeStringList(qualifications);
-    }
-
-    if (isActive !== undefined) {
-      updateData.isActive = Boolean(isActive);
-    }
-
-    const updatedJob = await prisma.jobPost.update({
-      where: {
-        id,
-      },
-      data: updateData,
-    });
-
-    backupInBackground(backupJobPosts, "jobPosts");
-
     res.status(200).json({
       success: true,
-      message: "Job updated successfully",
+      message: 'Job updated successfully',
       data: updatedJob,
     });
   } catch (error) {
-    console.error("Update Job Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to update job",
-    });
+    next(error);
   }
 };
 
@@ -305,66 +95,16 @@ export const updateJobPost = async (
  */
 export const deleteJobPost = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   try {
-    const id = String(req.params.id);
-
-    const existingJob = await prisma.jobPost.findFirst({
-      where: {
-        id,
-        isDeleted: false,
-      },
-    });
-
-    if (!existingJob) {
-      res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
-      return;
-    }
-
-    await prisma.jobPost.update({
-      where: {
-        id,
-      },
-      data: {
-        isDeleted: true,
-        isActive: false,
-      },
-    });
-
-    backupInBackground(backupJobPosts, "jobPosts");
-
+    await jobPostService.delete(String(req.params.id));
     res.status(200).json({
       success: true,
-      message: "Job deleted successfully",
+      message: 'Job deleted successfully',
     });
   } catch (error) {
-    console.error("Delete Job Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete job",
-    });
+    next(error);
   }
 };
-
-/** Accept string[], newline/comma string, or empty → cleaned string[]. */
-function normalizeStringList(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => String(item).trim())
-      .filter(Boolean);
-  }
-
-  if (typeof value === "string") {
-    return value
-      .split(/\n|,/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-}

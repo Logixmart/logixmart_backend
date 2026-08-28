@@ -1,5 +1,6 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
+import { config } from '../config';
 import prisma from './prisma';
 
 const DATA_DIR = path.join(process.cwd(), 'src/data');
@@ -15,15 +16,15 @@ export const CONTACT_SUBMISSIONS_BACKUP_PATH = path.join(
   'contactSubmissions.json'
 );
 
-function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
+const pendingBackups = new Map<string, NodeJS.Timeout>();
+
+async function ensureDataDir(): Promise<void> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
 }
 
-function writeJson(filePath: string, data: unknown): void {
-  ensureDataDir();
-  fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
+async function writeJson(filePath: string, data: unknown): Promise<void> {
+  await ensureDataDir();
+  await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf-8');
 }
 
 /** Snapshot all blogs → src/data/blogs.json */
@@ -31,7 +32,7 @@ export async function backupBlogs(): Promise<void> {
   const blogs = await prisma.blog.findMany({
     orderBy: { createdAt: 'asc' },
   });
-  writeJson(
+  await writeJson(
     BLOGS_BACKUP_PATH,
     blogs.map((blog) => ({
       id: blog.id,
@@ -49,7 +50,7 @@ export async function backupJobPosts(): Promise<void> {
   const jobs = await prisma.jobPost.findMany({
     orderBy: { createdAt: 'asc' },
   });
-  writeJson(
+  await writeJson(
     JOB_POSTS_BACKUP_PATH,
     jobs.map((job) => ({
       id: job.id,
@@ -74,7 +75,7 @@ export async function backupJobApplications(): Promise<void> {
   const applications = await prisma.jobApplication.findMany({
     orderBy: { createdAt: 'asc' },
   });
-  writeJson(
+  await writeJson(
     JOB_APPLICATIONS_BACKUP_PATH,
     applications.map((app) => ({
       id: app.id,
@@ -98,7 +99,7 @@ export async function backupContactSubmissions(): Promise<void> {
   const contacts = await prisma.contactSubmission.findMany({
     orderBy: { createdAt: 'asc' },
   });
-  writeJson(
+  await writeJson(
     CONTACT_SUBMISSIONS_BACKUP_PATH,
     contacts.map((contact) => ({
       id: contact.id,
@@ -115,18 +116,37 @@ export async function backupContactSubmissions(): Promise<void> {
 
 /** Write all JSON backups (blogs, jobs, applications, contacts). */
 export async function backupAll(): Promise<void> {
-  await backupBlogs();
-  await backupJobPosts();
-  await backupJobApplications();
-  await backupContactSubmissions();
+  await Promise.all([
+    backupBlogs(),
+    backupJobPosts(),
+    backupJobApplications(),
+    backupContactSubmissions(),
+  ]);
 }
 
-/** Fire-and-forget backup; logs errors without failing the request. */
+/**
+ * Debounced fire-and-forget backup.
+ * Coalesces rapid writes so one table scan runs after a quiet period.
+ */
 export function backupInBackground(
   task: () => Promise<void>,
   label: string
 ): void {
-  void task().catch((error) => {
-    console.error(`JSON backup failed (${label}):`, error);
-  });
+  if (!config.enableJsonBackup) {
+    return;
+  }
+
+  const existing = pendingBackups.get(label);
+  if (existing) {
+    clearTimeout(existing);
+  }
+
+  const timeout = setTimeout(() => {
+    pendingBackups.delete(label);
+    void task().catch((error) => {
+      console.error(`JSON backup failed (${label}):`, error);
+    });
+  }, config.jsonBackupDebounceMs);
+
+  pendingBackups.set(label, timeout);
 }

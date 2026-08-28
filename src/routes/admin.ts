@@ -12,10 +12,11 @@ import {
   authenticateAdmin,
   requireSuperAdmin,
 } from '../middlewares/auth';
+import { loginLimiter } from '../middlewares/rateLimit';
 
 const router = Router();
 
-router.post('/login', login);
+router.post('/login', loginLimiter, login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 

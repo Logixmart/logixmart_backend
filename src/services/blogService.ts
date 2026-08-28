@@ -1,3 +1,4 @@
+import { buildPaginationMeta, PaginationMeta } from '../utils/pagination';
 import { backupBlogs, backupInBackground } from '../lib/jsonBackup';
 import prisma from '../lib/prisma';
 import { AppError } from '../utils/AppError';
@@ -42,14 +43,30 @@ function toBlogDto(blog: Blog, storage: FileStorage = fileStorage): BlogDto {
   };
 }
 
+export interface PaginatedBlogs {
+  data: BlogDto[];
+  pagination: PaginationMeta;
+}
+
 export class BlogService {
   constructor(private readonly storage: FileStorage = fileStorage) {}
 
-  async list(): Promise<BlogDto[]> {
-    const blogs = await prisma.blog.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-    return blogs.map((blog) => toBlogDto(blog, this.storage));
+  async list(page = 1, limit = 20): Promise<PaginatedBlogs> {
+    const skip = (page - 1) * limit;
+
+    const [blogs, total] = await Promise.all([
+      prisma.blog.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.blog.count(),
+    ]);
+
+    return {
+      data: blogs.map((blog) => toBlogDto(blog, this.storage)),
+      pagination: buildPaginationMeta(page, limit, total),
+    };
   }
 
   async getById(id: string): Promise<BlogDto> {

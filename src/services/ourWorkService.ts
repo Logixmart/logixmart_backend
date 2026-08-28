@@ -1,3 +1,4 @@
+import { buildPaginationMeta, PaginationMeta } from '../utils/pagination';
 import prisma from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { fileStorage, FileStorage } from './storage';
@@ -84,14 +85,30 @@ function toOurWorkDto(
   };
 }
 
+export interface PaginatedOurWorks {
+  data: OurWorkDto[];
+  pagination: PaginationMeta;
+}
+
 export class OurWorkService {
   constructor(private readonly storage: FileStorage = fileStorage) {}
 
-  async list(): Promise<OurWorkDto[]> {
-    const works = await prisma.ourWork.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-    return works.map((work) => toOurWorkDto(work, this.storage));
+  async list(page = 1, limit = 20): Promise<PaginatedOurWorks> {
+    const skip = (page - 1) * limit;
+
+    const [works, total] = await Promise.all([
+      prisma.ourWork.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.ourWork.count(),
+    ]);
+
+    return {
+      data: works.map((work) => toOurWorkDto(work, this.storage)),
+      pagination: buildPaginationMeta(page, limit, total),
+    };
   }
 
   async getById(id: string): Promise<OurWorkDto> {

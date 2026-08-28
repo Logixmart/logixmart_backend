@@ -8,6 +8,7 @@ import {
   getJobApplicationById,
   updateJobApplicationStatus,
   deleteJobApplication,
+  downloadJobApplicationResume,
 } from '../controllers/JobApplication';
 import { exportJobApplications } from '../controllers/Export';
 
@@ -20,6 +21,7 @@ router.get(
   exportJobApplications
 );
 router.get('/', authenticateAdmin, getJobApplications);
+router.get('/:id/resume', authenticateAdmin, downloadJobApplicationResume);
 router.get('/:id', authenticateAdmin, getJobApplicationById);
 router.patch('/:id/status', authenticateAdmin, updateJobApplicationStatus);
 router.delete('/:id', authenticateAdmin, deleteJobApplication);

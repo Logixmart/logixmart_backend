@@ -18,6 +18,7 @@ model Blog {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([createdAt])
   @@map("blogs")
 }
 
@@ -116,6 +117,7 @@ model OurWork {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([createdAt])
   @@map("our_works")
 }
 

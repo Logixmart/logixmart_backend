@@ -32,6 +32,8 @@ export const errorHandler = (
     message.toLowerCase().includes('file type')
   ) {
     statusCode = 400;
+  } else if (statusCode === 500) {
+    message = 'Internal Server Error';
   }
 
   console.error(`[Error] ${statusCode} - ${message}`);
