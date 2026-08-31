@@ -3,14 +3,37 @@ import prisma from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { fileStorage, FileStorage } from './storage';
 
-type OurWork = NonNullable<Awaited<ReturnType<typeof prisma.ourWork.findFirst>>>;
+const OUR_WORK_SELECT = {
+  id: true,
+  title: true,
+  description: true,
+  websiteUrl: true,
+  appStoreUrl: true,
+  playStoreUrl: true,
+  images: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+interface OurWorkRow {
+  id: string;
+  title: string;
+  description: string;
+  websiteUrl: string | null;
+  appStoreUrl: string | null;
+  playStoreUrl: string | null;
+  images: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface OurWorkDto {
   id: string;
   title: string;
   description: string;
-  projectUrl?: string;
-  webAppUrl?: string;
+  websiteUrl?: string;
+  appStoreUrl?: string;
+  playStoreUrl?: string;
   images: string[];
   createdAt: string;
   updatedAt: string;
@@ -19,8 +42,9 @@ export interface OurWorkDto {
 export interface CreateOurWorkInput {
   title?: string;
   description?: string;
-  projectUrl?: string;
-  webAppUrl?: string;
+  websiteUrl?: string;
+  appStoreUrl?: string;
+  playStoreUrl?: string;
   uploadedFilenames?: string[];
   uploadedFilePaths?: string[];
 }
@@ -29,8 +53,9 @@ export interface UpdateOurWorkInput {
   id: string;
   title?: string;
   description?: string;
-  projectUrl?: string | null;
-  webAppUrl?: string | null;
+  websiteUrl?: string | null;
+  appStoreUrl?: string | null;
+  playStoreUrl?: string | null;
   uploadedFilenames?: string[];
   uploadedFilePaths?: string[];
   /** Relative paths or public URLs of images to remove */
@@ -70,15 +95,16 @@ function normalizeStoredPath(
 }
 
 function toOurWorkDto(
-  work: OurWork,
+  work: OurWorkRow,
   storage: FileStorage = fileStorage
 ): OurWorkDto {
   return {
     id: work.id,
     title: work.title,
     description: work.description,
-    ...(work.projectUrl ? { projectUrl: work.projectUrl } : {}),
-    ...(work.webAppUrl ? { webAppUrl: work.webAppUrl } : {}),
+    ...(work.websiteUrl ? { websiteUrl: work.websiteUrl } : {}),
+    ...(work.appStoreUrl ? { appStoreUrl: work.appStoreUrl } : {}),
+    ...(work.playStoreUrl ? { playStoreUrl: work.playStoreUrl } : {}),
     images: work.images.map((path) => storage.getPublicUrl(path)),
     createdAt: work.createdAt.toISOString(),
     updatedAt: work.updatedAt.toISOString(),
@@ -98,6 +124,7 @@ export class OurWorkService {
 
     const [works, total] = await Promise.all([
       prisma.ourWork.findMany({
+        select: OUR_WORK_SELECT,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -106,13 +133,18 @@ export class OurWorkService {
     ]);
 
     return {
-      data: works.map((work) => toOurWorkDto(work, this.storage)),
+      data: (works as OurWorkRow[]).map((work) =>
+        toOurWorkDto(work, this.storage)
+      ),
       pagination: buildPaginationMeta(page, limit, total),
     };
   }
 
   async getById(id: string): Promise<OurWorkDto> {
-    const work = await prisma.ourWork.findUnique({ where: { id } });
+    const work = (await prisma.ourWork.findUnique({
+      where: { id },
+      select: OUR_WORK_SELECT,
+    })) as OurWorkRow | null;
     if (!work) {
       throw new AppError('Our work not found', 404);
     }
@@ -122,8 +154,9 @@ export class OurWorkService {
   async create(input: CreateOurWorkInput): Promise<OurWorkDto> {
     const title = input.title?.trim();
     const description = input.description?.trim();
-    const projectUrl = toOptionalUrl(input.projectUrl) ?? null;
-    const webAppUrl = toOptionalUrl(input.webAppUrl) ?? null;
+    const websiteUrl = toOptionalUrl(input.websiteUrl) ?? null;
+    const appStoreUrl = toOptionalUrl(input.appStoreUrl) ?? null;
+    const playStoreUrl = toOptionalUrl(input.playStoreUrl) ?? null;
 
     if (!title || !description) {
       await this.cleanupUploadedFiles(input.uploadedFilePaths);
@@ -135,15 +168,17 @@ export class OurWorkService {
     );
 
     try {
-      const work = await prisma.ourWork.create({
+      const work = (await prisma.ourWork.create({
         data: {
           title,
           description,
-          projectUrl,
-          webAppUrl,
+          websiteUrl,
+          appStoreUrl,
+          playStoreUrl,
           images,
         },
-      });
+        select: OUR_WORK_SELECT,
+      })) as OurWorkRow;
       return toOurWorkDto(work, this.storage);
     } catch (error) {
       await this.cleanupUploadedFiles(input.uploadedFilePaths);
@@ -152,9 +187,10 @@ export class OurWorkService {
   }
 
   async update(input: UpdateOurWorkInput): Promise<OurWorkDto> {
-    const existing = await prisma.ourWork.findUnique({
+    const existing = (await prisma.ourWork.findUnique({
       where: { id: input.id },
-    });
+      select: OUR_WORK_SELECT,
+    })) as OurWorkRow | null;
 
     if (!existing) {
       await this.cleanupUploadedFiles(input.uploadedFilePaths);
@@ -173,14 +209,18 @@ export class OurWorkService {
       throw new AppError('Title and description cannot be empty', 400);
     }
 
-    const nextProjectUrl =
-      input.projectUrl !== undefined
-        ? toOptionalUrl(input.projectUrl) ?? null
-        : existing.projectUrl;
-    const nextWebAppUrl =
-      input.webAppUrl !== undefined
-        ? toOptionalUrl(input.webAppUrl) ?? null
-        : existing.webAppUrl;
+    const nextWebsiteUrl =
+      input.websiteUrl !== undefined
+        ? toOptionalUrl(input.websiteUrl) ?? null
+        : existing.websiteUrl;
+    const nextAppStoreUrl =
+      input.appStoreUrl !== undefined
+        ? toOptionalUrl(input.appStoreUrl) ?? null
+        : existing.appStoreUrl;
+    const nextPlayStoreUrl =
+      input.playStoreUrl !== undefined
+        ? toOptionalUrl(input.playStoreUrl) ?? null
+        : existing.playStoreUrl;
 
     const removeSet = new Set(
       (input.removeImages ?? [])
@@ -200,16 +240,18 @@ export class OurWorkService {
     );
 
     try {
-      const work = await prisma.ourWork.update({
+      const work = (await prisma.ourWork.update({
         where: { id: input.id },
         data: {
           title: nextTitle,
           description: nextDescription,
-          projectUrl: nextProjectUrl,
-          webAppUrl: nextWebAppUrl,
+          websiteUrl: nextWebsiteUrl,
+          appStoreUrl: nextAppStoreUrl,
+          playStoreUrl: nextPlayStoreUrl,
           images: nextImages,
         },
-      });
+        select: OUR_WORK_SELECT,
+      })) as OurWorkRow;
 
       await Promise.all(
         removedImages.map((path) => this.storage.deleteIfExists(path))
@@ -223,7 +265,10 @@ export class OurWorkService {
   }
 
   async delete(id: string): Promise<void> {
-    const existing = await prisma.ourWork.findUnique({ where: { id } });
+    const existing = (await prisma.ourWork.findUnique({
+      where: { id },
+      select: { images: true },
+    })) as { images: string[] } | null;
     if (!existing) {
       throw new AppError('Our work not found', 404);
     }

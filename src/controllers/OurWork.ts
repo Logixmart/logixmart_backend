@@ -88,14 +88,15 @@ export const createOurWork = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, description, projectUrl, webAppUrl } = req.body;
+    const { title, description, websiteUrl, appStoreUrl, playStoreUrl } = req.body;
     const files = uploadedFiles(req);
 
     const work = await ourWorkService.create({
       title,
       description,
-      projectUrl,
-      webAppUrl,
+      websiteUrl,
+      appStoreUrl,
+      playStoreUrl,
       uploadedFilenames: files.map((file) => file.filename),
       uploadedFilePaths: files.map((file) => file.path),
     });
@@ -120,7 +121,7 @@ export const updateOurWork = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, description, projectUrl, webAppUrl, removeImages } =
+    const { title, description, websiteUrl, appStoreUrl, playStoreUrl, removeImages } =
       req.body;
     const files = uploadedFiles(req);
 
@@ -128,8 +129,9 @@ export const updateOurWork = async (
       id: String(req.params.id),
       title,
       description,
-      projectUrl,
-      webAppUrl,
+      websiteUrl,
+      appStoreUrl,
+      playStoreUrl,
       removeImages: parseRemoveImages(removeImages),
       uploadedFilenames: files.map((file) => file.filename),
       uploadedFilePaths: files.map((file) => file.path),

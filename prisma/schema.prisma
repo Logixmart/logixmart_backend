@@ -109,8 +109,9 @@ model OurWork {
   title       String
   description String   @db.Text
 
-  projectUrl  String?
-  webAppUrl   String?
+  websiteUrl   String?
+  appStoreUrl  String?
+  playStoreUrl String?
 
   images      String[] @default([])
 
