@@ -16,6 +16,11 @@ const staticCacheOptions = {
   maxAge: config.isProduction ? '7d' : 0,
   etag: true,
   immutable: config.isProduction,
+  setHeaders: (res: Response) => {
+    // Allows performance observation and eliminates extension timing crashes
+    res.setHeader('Timing-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  },
 };
 
 app.use(
@@ -57,7 +62,7 @@ uploadDirs.forEach((dir) => {
   }
 });
 
-// Public portfolio assets only — resumes are not exposed via static files
+// Public portfolio assets — served with Timing-Allow-Origin headers
 app.use(
   '/uploads/blogs',
   express.static(config.blogsUploadDir, staticCacheOptions)

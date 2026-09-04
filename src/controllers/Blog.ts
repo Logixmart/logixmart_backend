@@ -76,19 +76,47 @@ export const createBlog = async (
  * Update an existing blog (image optional)
  * PUT /api/blogs/:id
  */
+// export const updateBlog = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ): Promise<void> => {
+//   try {
+//     const { title, description } = req.body;
+//     const blog = await blogService.update({
+//       id: String(req.params.id),
+//       title,
+//       description,
+//       uploadedFilename: req.file?.filename,
+//       uploadedFilePath: req.file?.path,
+//     });
+//     console.log(blog);
+//     res.status(200).json({
+//       success: true,
+//       message: 'Blog updated successfully',
+//       data: blog,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 export const updateBlog = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, description } = req.body;
+    const { title, description, removeImage } = req.body;
+    const shouldRemoveImage = removeImage === 'true';
+
     const blog = await blogService.update({
       id: String(req.params.id),
       title,
       description,
+      // Pass optional file or explicitly signal removal
       uploadedFilename: req.file?.filename,
       uploadedFilePath: req.file?.path,
+      removeImage: shouldRemoveImage,
     });
 
     res.status(200).json({

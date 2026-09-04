@@ -7,16 +7,10 @@
     "employmentType": "Full-time",
     "experience": "5+ years of software development (3+ years dedicated to React Native)",
     "skills": [
-      "React Native",
-      "ReactJS",
-      "JavaScript (ES6+)",
-      "TypeScript",
       "Swift",
       "Java/Kotlin",
-      "Git",
       "Jest",
       "Detox",
-      "React Native Debugger",
       "Component-driven design",
       "Hook-based workflows",
       "REST/GraphQL",
@@ -43,7 +37,7 @@
     "isActive": true,
     "isDeleted": false,
     "createdAt": "2026-08-25T07:23:05.394Z",
-    "updatedAt": "2026-08-25T07:37:11.846Z"
+    "updatedAt": "2026-09-04T12:07:42.547Z"
   },
   {
     "id": "cmt8d8ww00003ttndejhngjx2",
@@ -122,5 +116,50 @@
     "isDeleted": false,
     "createdAt": "2026-08-25T11:26:39.971Z",
     "updatedAt": "2026-08-27T04:38:15.575Z"
+  },
+  {
+    "id": "cmtmvqr1i0000tt6n0par5epb",
+    "title": "React Developer",
+    "description": "We are looking for a skilled React Developer to join our development team. You will be responsible for building responsive, scalable, and high-performance web applications using React.js and modern frontend technologies.",
+    "location": "Remote / Hybrid",
+    "employmentType": "Full-time",
+    "experience": "2–4 Years",
+    "skills": [
+      "React.js",
+      "JavaScript (ES6+)",
+      "HTML5 & CSS3",
+      "React Hooks",
+      "REST API Integration",
+      "Responsive Web Design",
+      "Git & GitHub",
+      "State Management",
+      "JSON",
+      "Debugging & Troubleshooting"
+    ],
+    "responsibilities": [
+      "Develop and maintain responsive web applications using React.js.",
+      "Build reusable and scalable UI components.",
+      "Integrate REST APIs and handle asynchronous data.",
+      "Manage application state using suitable state-management solutions.",
+      "Collaborate with UI/UX designers and backend developers.",
+      "Optimize applications for performance, accessibility, and cross-browser compatibility.",
+      "Debug issues and write clean, maintainable code.",
+      "Participate in code reviews and follow development best practices.",
+      "Stay updated with modern React and frontend technologies."
+    ],
+    "qualifications": [
+      "2+ years of professional experience with React.js.",
+      "Strong knowledge of JavaScript (ES6+) and HTML/CSS.",
+      "Experience with React Hooks and component-based architecture.",
+      "Good understanding of REST APIs and JSON.",
+      "Experience with Git and GitHub/GitLab.",
+      "Understanding of responsive web design.",
+      "Familiarity with state management such as Redux, Zustand, or Context API.",
+      "Good problem-solving and communication skills."
+    ],
+    "isActive": true,
+    "isDeleted": false,
+    "createdAt": "2026-09-04T11:37:49.924Z",
+    "updatedAt": "2026-09-04T11:37:49.924Z"
   }
 ]
