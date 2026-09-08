@@ -1,39 +1,88 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { config } from '../config';
 
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
-    // Ensure upload directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Save file with unique timestamp + original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
+const IMAGE_EXTENSIONS = new Set(['.jpeg', '.jpg', '.png', '.webp']);
+const IMAGE_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+]);
 
-// Check file type
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+const RESUME_EXTENSIONS = new Set(['.pdf', '.doc', '.docx']);
+const RESUME_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
 
-  if (extname && mimetype) {
-    return cb(null, true);
+const FILE_SIZE_LIMIT = 5 * 1024 * 1024; // 5MB
+
+function uniqueFilename(originalName: string, allowedExts: Set<string>): string {
+  const ext = path.extname(originalName).toLowerCase();
+  const safeExt = allowedExts.has(ext) ? ext : '';
+  return `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`;
+}
+
+function ensureDir(dir: string): void {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
-  cb(new Error('Only images (jpeg, jpg, png, gif, webp) are allowed'));
-};
+}
 
-// Init upload
-export const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limit 5MB
-  fileFilter,
+function createImageUpload(destinationDir: string) {
+  return multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => {
+        ensureDir(destinationDir);
+        cb(null, destinationDir);
+      },
+      filename: (_req, file, cb) => {
+        cb(null, uniqueFilename(file.originalname, IMAGE_EXTENSIONS));
+      },
+    }),
+    limits: { fileSize: FILE_SIZE_LIMIT },
+    fileFilter: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const extOk = IMAGE_EXTENSIONS.has(ext);
+      const mimeOk = IMAGE_MIME_TYPES.has(file.mimetype.toLowerCase());
+
+      if (extOk && mimeOk) {
+        cb(null, true);
+        return;
+      }
+
+      cb(new Error('Only images (jpeg, jpg, png, webp) are allowed'));
+    },
+  });
+}
+
+export const upload = createImageUpload(config.blogsUploadDir);
+export const ourWorkUpload = createImageUpload(config.ourWorksUploadDir);
+
+export const resumeUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      ensureDir(config.resumesUploadDir);
+      cb(null, config.resumesUploadDir);
+    },
+    filename: (_req, file, cb) => {
+      cb(null, uniqueFilename(file.originalname, RESUME_EXTENSIONS));
+    },
+  }),
+  limits: { fileSize: FILE_SIZE_LIMIT },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const extOk = RESUME_EXTENSIONS.has(ext);
+    const mimeOk = RESUME_MIME_TYPES.has(file.mimetype.toLowerCase());
+
+    if (extOk && mimeOk) {
+      cb(null, true);
+      return;
+    }
+
+    cb(new Error('Only resume files (pdf, doc, docx) are allowed'));
+  },
 });

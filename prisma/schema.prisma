@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Blog {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@map("blogs")
+}
+
+model JobPost {
+  id               String   @id @default(cuid())
+  title            String
+  description      String
+  location         String?
+  employmentType   String?
+  experience       String?
+  skills           String[] @default([])
+  responsibilities String[] @default([])
+  qualifications   String[] @default([])
+  isActive         Boolean  @default(true)
+  isDeleted        Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications JobApplication[]
+
+  @@index([isDeleted])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+enum JobApplicationStatus {
+  PENDING
+  REVIEWING
+  SHORTLISTED
+  INTERVIEW
+  SELECTED
+  REJECTED
+}
+
+model JobApplication {
+  id            String                @id @default(cuid())
+  jobId         String
+  job           JobPost               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantName String
+  email         String
+  phone         String?
+  resumeUrl     String?
+  coverLetter   String?
+  portfolioUrl  String?
+  linkedinUrl   String?
+  status        JobApplicationStatus  @default(PENDING)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@unique([jobId, email])
+  @@index([jobId])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([email])
+}
+
+model ClientReview {
+  id           String   @id @default(cuid())
+  clientName   String
+  companyName  String?
+  email        String
+  designation  String?
+  message      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([email])
+}
+
+model OurWork {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  category String @default("App Development")
+
+  websiteUrl   String?
+  appStoreUrl  String?
+  playStoreUrl String?
+
+  images      String[] @default([])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
+  @@map("our_works")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+model Admin {
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  passwordHash          String
+  role                  AdminRole @default(ADMIN)
+  refreshTokenHash      String?
+  refreshTokenExpiresAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([role])
+  @@index([createdAt])
+}
