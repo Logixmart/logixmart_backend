@@ -1,12 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { AdminRole } from '@prisma/client';
 import { config } from '../config';
 
+export type AdminJwtRole = 'SUPER_ADMIN' | 'ADMIN';
+
+export interface AuthenticatedAdmin {
+  id: string;
+  email: string;
+  name: string;
+  role: AdminJwtRole;
+}
+
 export interface AuthenticatedRequest extends Request {
-  user?: {
-    email: string;
-    role: string;
-  };
+  user?: AuthenticatedAdmin;
+}
+
+const ALLOWED_ROLES: AdminJwtRole[] = ['SUPER_ADMIN', 'ADMIN'];
+
+function isAdminRole(role: unknown): role is AdminJwtRole {
+  return typeof role === 'string' && ALLOWED_ROLES.includes(role as AdminJwtRole);
 }
 
 export const authenticateAdmin = (
@@ -25,25 +38,47 @@ export const authenticateAdmin = (
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, config.jwtSecret) as {
-      email: string;
-      role: string;
-    };
+    const decoded = jwt.verify(token, config.jwtSecret) as Partial<AuthenticatedAdmin>;
 
-    if (decoded.role !== 'admin') {
-      res.status(403).json({
+    if (
+      !decoded.id ||
+      !decoded.email ||
+      !decoded.name ||
+      !isAdminRole(decoded.role)
+    ) {
+      res.status(401).json({
         success: false,
-        message: 'Access denied: Admin only',
+        message: 'Invalid or expired token',
       });
       return;
     }
 
-    req.user = decoded;
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      name: decoded.name,
+      role: decoded.role,
+    };
     next();
-  } catch (error) {
+  } catch {
     res.status(401).json({
       success: false,
       message: 'Invalid or expired token',
     });
   }
+};
+
+export const requireSuperAdmin = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user || req.user.role !== AdminRole.SUPER_ADMIN) {
+    res.status(403).json({
+      success: false,
+      message: 'Access denied: Super admin only',
+    });
+    return;
+  }
+  next();
 };
