@@ -108,6 +108,7 @@ model OurWork {
   id          String   @id @default(uuid())
   title       String
   description String   @db.Text
+  category String @default("App Development")
 
   websiteUrl   String?
   appStoreUrl  String?

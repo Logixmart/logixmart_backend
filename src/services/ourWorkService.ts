@@ -13,6 +13,7 @@ const OUR_WORK_SELECT = {
   images: true,
   createdAt: true,
   updatedAt: true,
+  category: true,
 } as const;
 
 interface OurWorkRow {
@@ -25,6 +26,7 @@ interface OurWorkRow {
   images: string[];
   createdAt: Date;
   updatedAt: Date;
+  category: string;
 }
 
 export interface OurWorkDto {
@@ -37,6 +39,7 @@ export interface OurWorkDto {
   images: string[];
   createdAt: string;
   updatedAt: string;
+  category: string;
 }
 
 export interface CreateOurWorkInput {
@@ -47,6 +50,7 @@ export interface CreateOurWorkInput {
   playStoreUrl?: string;
   uploadedFilenames?: string[];
   uploadedFilePaths?: string[];
+  category: string;
 }
 
 export interface UpdateOurWorkInput {
@@ -60,6 +64,7 @@ export interface UpdateOurWorkInput {
   uploadedFilePaths?: string[];
   /** Relative paths or public URLs of images to remove */
   removeImages?: string[];
+  category: string;
 }
 
 function toOptionalUrl(value?: string | null): string | undefined {
@@ -108,6 +113,7 @@ function toOurWorkDto(
     images: work.images.map((path) => storage.getPublicUrl(path)),
     createdAt: work.createdAt.toISOString(),
     updatedAt: work.updatedAt.toISOString(),
+    category: work.category,
   };
 }
 
@@ -157,7 +163,7 @@ export class OurWorkService {
     const websiteUrl = toOptionalUrl(input.websiteUrl) ?? null;
     const appStoreUrl = toOptionalUrl(input.appStoreUrl) ?? null;
     const playStoreUrl = toOptionalUrl(input.playStoreUrl) ?? null;
-
+    const category = input.category;
     if (!title || !description) {
       await this.cleanupUploadedFiles(input.uploadedFilePaths);
       throw new AppError('Title and description are required', 400);
@@ -176,6 +182,7 @@ export class OurWorkService {
           appStoreUrl,
           playStoreUrl,
           images,
+          category,
         },
         select: OUR_WORK_SELECT,
       })) as OurWorkRow;
@@ -221,7 +228,7 @@ export class OurWorkService {
       input.playStoreUrl !== undefined
         ? toOptionalUrl(input.playStoreUrl) ?? null
         : existing.playStoreUrl;
-
+    const category = input.category;
     const removeSet = new Set(
       (input.removeImages ?? [])
         .map((value) => normalizeStoredPath(value, this.storage))
@@ -249,6 +256,7 @@ export class OurWorkService {
           appStoreUrl: nextAppStoreUrl,
           playStoreUrl: nextPlayStoreUrl,
           images: nextImages,
+          category,
         },
         select: OUR_WORK_SELECT,
       })) as OurWorkRow;

@@ -88,7 +88,7 @@ export const createOurWork = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, description, websiteUrl, appStoreUrl, playStoreUrl } = req.body;
+    const { title, description, websiteUrl, appStoreUrl, playStoreUrl, category } = req.body;
     const files = uploadedFiles(req);
 
     const work = await ourWorkService.create({
@@ -99,6 +99,7 @@ export const createOurWork = async (
       playStoreUrl,
       uploadedFilenames: files.map((file) => file.filename),
       uploadedFilePaths: files.map((file) => file.path),
+      category,
     });
 
     res.status(201).json({
@@ -121,7 +122,7 @@ export const updateOurWork = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, description, websiteUrl, appStoreUrl, playStoreUrl, removeImages } =
+    const { title, description, websiteUrl, appStoreUrl, playStoreUrl, removeImages, category } =
       req.body;
     const files = uploadedFiles(req);
 
@@ -132,11 +133,12 @@ export const updateOurWork = async (
       websiteUrl,
       appStoreUrl,
       playStoreUrl,
+      category,
       removeImages: parseRemoveImages(removeImages),
       uploadedFilenames: files.map((file) => file.filename),
       uploadedFilePaths: files.map((file) => file.path),
     });
-
+    console.log(work);
     res.status(200).json({
       success: true,
       message: 'Our work updated successfully',
