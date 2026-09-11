@@ -48,10 +48,6 @@ export const config = {
     process.env.API_BASE_URL ||
     `http://localhost:${process.env.PORT || 5000}`,
   corsOrigins,
-  /** Debounced JSON snapshots (dev/seed). Disable in production with BACKUP_JSON=false */
-  enableJsonBackup:
-    process.env.BACKUP_JSON !== 'false' && !isProduction,
-  jsonBackupDebounceMs: Number(process.env.BACKUP_JSON_DEBOUNCE_MS) || 5000,
   uploadsRoot,
   blogsUploadDir: path.join(uploadsRoot, 'blogs'),
   resumesUploadDir: path.join(uploadsRoot, 'resumes'),

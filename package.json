@@ -12,7 +12,6 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
-    "db:backup": "ts-node --transpile-only scripts/backup-json.ts",
     "db:up": "docker compose up -d postgres",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
