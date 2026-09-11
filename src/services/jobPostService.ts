@@ -1,8 +1,4 @@
 import { Prisma } from '@prisma/client';
-import {
-  backupInBackground,
-  backupJobPosts,
-} from '../lib/jsonBackup';
 import prisma from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import {
@@ -77,7 +73,6 @@ export class JobPostService {
       },
     });
 
-    backupInBackground(backupJobPosts, 'jobPosts');
     return job;
   }
 
@@ -182,7 +177,6 @@ export class JobPostService {
       data: updateData,
     });
 
-    backupInBackground(backupJobPosts, 'jobPosts');
     return updatedJob;
   }
 
@@ -202,8 +196,6 @@ export class JobPostService {
         isActive: false,
       },
     });
-
-    backupInBackground(backupJobPosts, 'jobPosts');
   }
 }
 

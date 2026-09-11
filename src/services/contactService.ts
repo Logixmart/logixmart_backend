@@ -1,8 +1,4 @@
 import { Prisma } from '@prisma/client';
-import {
-  backupContactSubmissions,
-  backupInBackground,
-} from '../lib/jsonBackup';
 import prisma from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import {
@@ -68,7 +64,6 @@ export class ContactService {
       },
     });
 
-    backupInBackground(backupContactSubmissions, 'contactSubmissions');
     return contact;
   }
 
@@ -115,7 +110,6 @@ export class ContactService {
     }
 
     await prisma.contactSubmission.delete({ where: { id } });
-    backupInBackground(backupContactSubmissions, 'contactSubmissions');
   }
 
   buildExportWhere(search: unknown): Prisma.ContactSubmissionWhereInput {

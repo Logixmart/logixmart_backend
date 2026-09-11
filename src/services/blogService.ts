@@ -1,5 +1,4 @@
 import { buildPaginationMeta, PaginationMeta } from '../utils/pagination';
-import { backupBlogs, backupInBackground } from '../lib/jsonBackup';
 import prisma from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { fileStorage, FileStorage } from './storage';
@@ -99,7 +98,6 @@ export class BlogService {
           imageUrl: imageUrl ?? null,
         },
       });
-      backupInBackground(backupBlogs, 'blogs');
       return toBlogDto(blog, this.storage);
     } catch (error) {
       await this.cleanupUploadedFile(input.uploadedFilePath);
@@ -206,8 +204,7 @@ export class BlogService {
       if (imageWasChanged) {
         await this.storage.deleteIfExists(previousImageUrl);
       }
-  
-      backupInBackground(backupBlogs, 'blogs');
+
       return toBlogDto(blog, this.storage);
     } catch (error) {
       // Clean up newly uploaded file if database update fails
@@ -224,7 +221,6 @@ export class BlogService {
 
     await prisma.blog.delete({ where: { id } });
     await this.storage.deleteIfExists(existing.imageUrl);
-    backupInBackground(backupBlogs, 'blogs');
   }
 
   private async cleanupUploadedFile(filePath?: string): Promise<void> {
