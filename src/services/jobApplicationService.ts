@@ -8,10 +8,6 @@ import {
   JOB_SELECT,
   APPLICATION_STATUS_MESSAGE,
 } from '../constants/jobApplication';
-import {
-  backupInBackground,
-  backupJobApplications,
-} from '../lib/jsonBackup';
 import prisma from '../lib/prisma';
 import { fileStorage } from './storage';
 import { AppError } from '../utils/AppError';
@@ -148,8 +144,6 @@ export class JobApplicationService {
         },
       });
 
-      backupInBackground(backupJobApplications, 'jobApplications');
-
       return {
         id: application.id,
         jobId: application.jobId,
@@ -252,7 +246,6 @@ export class JobApplicationService {
       include: { job: { select: JOB_SELECT } },
     });
 
-    backupInBackground(backupJobApplications, 'jobApplications');
     return withResumeDownloadUrl(updated);
   }
 
@@ -264,7 +257,6 @@ export class JobApplicationService {
 
     await prisma.jobApplication.delete({ where: { id } });
     await fileStorage.deleteIfExists(existing.resumeUrl);
-    backupInBackground(backupJobApplications, 'jobApplications');
   }
 
   async getResumeDownloadInfo(id: string): Promise<ResumeDownloadInfo> {
