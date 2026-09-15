@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 const BOOTSTRAP_ADMIN_EMAIL =
   process.env.ADMIN_EMAIL || 'admin@logixmart.com';
 const BOOTSTRAP_ADMIN_PASSWORD =
-  process.env.ADMIN_PASSWORD || 'LogixmartAdmin2026!';
+  process.env.ADMIN_PASSWORD || 'Password@123';
 const BOOTSTRAP_ADMIN_NAME = process.env.ADMIN_NAME || 'Super Admin';
 
 async function seedSuperAdmin(): Promise<{ created: boolean; skipped: boolean }> {
