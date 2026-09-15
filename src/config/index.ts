@@ -42,7 +42,7 @@ export const config = {
   adminEmail: process.env.ADMIN_EMAIL || 'admin@logixmart.com',
   adminPassword:
     process.env.ADMIN_PASSWORD ||
-    (isProduction ? '' : 'LogixmartAdmin2026!'),
+    (isProduction ? '' : 'Password@123'),
   databaseUrl: requireEnv('DATABASE_URL', isProduction ? undefined : ''),
   apiBaseUrl:
     process.env.API_BASE_URL ||
