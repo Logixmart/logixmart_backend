@@ -1,14 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import { config } from '../../config';
-import { FileStorage } from './types';
+import { FileStorage, UploadFolder } from './types';
 
 const BLOGS_PUBLIC_PREFIX = '/uploads/blogs/';
 const RESUMES_PUBLIC_PREFIX = '/uploads/resumes/';
 const OUR_WORKS_PUBLIC_PREFIX = '/uploads/our-works/';
 const LEGACY_PUBLIC_PREFIX = '/uploads/';
-
-type UploadFolder = 'blogs' | 'resumes' | 'our-works';
 
 const FOLDER_PREFIX: Record<UploadFolder, string> = {
   blogs: BLOGS_PUBLIC_PREFIX,
@@ -43,6 +41,15 @@ export class LocalFileStorage implements FileStorage {
     return `${FOLDER_PREFIX[folder]}${safeName}`;
   }
 
+  async persistLocalUpload(
+    _localFilePath: string,
+    filename: string,
+    folder: UploadFolder = 'blogs'
+  ): Promise<string> {
+    // Multer already wrote the file under uploads/<folder>/
+    return this.publicPathForFilename(filename, folder);
+  }
+
   async deleteIfExists(storedPath: string | null | undefined): Promise<void> {
     if (!storedPath) {
       return;
@@ -60,6 +67,27 @@ export class LocalFileStorage implements FileStorage {
     } catch (error) {
       console.error('Failed to delete stored file:', absolutePath, error);
     }
+  }
+
+  async exists(storedPath: string | null | undefined): Promise<boolean> {
+    if (!storedPath) {
+      return false;
+    }
+
+    // Object paths (blogs/..., our-works/...) are only meaningful in Supabase.
+    if (
+      storedPath.startsWith('blogs/') ||
+      storedPath.startsWith('our-works/')
+    ) {
+      return false;
+    }
+
+    const absolutePath = this.resolveSafePath(storedPath);
+    if (!absolutePath) {
+      return false;
+    }
+
+    return fs.existsSync(absolutePath);
   }
 
   private resolveSafePath(storedPath: string): string | null {

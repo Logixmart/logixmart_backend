@@ -1,7 +1,14 @@
 import { buildPaginationMeta, PaginationMeta } from '../utils/pagination';
 import prisma from '../lib/prisma';
 import { AppError } from '../utils/AppError';
-import { fileStorage, FileStorage } from './storage';
+import fs from 'fs';
+import { imageStorage, FileStorage } from './storage';
+import {
+  objectPathFromSupabasePublicUrl,
+  resolveImageObjectPath,
+} from '../utils/imagePaths';
+import { getImageBucket } from './storage/supabaseImageObjects';
+import { MAX_OUR_WORK_IMAGES } from '../constants/images';
 
 const OUR_WORK_SELECT = {
   id: true,
@@ -50,6 +57,8 @@ export interface CreateOurWorkInput {
   playStoreUrl?: string;
   uploadedFilenames?: string[];
   uploadedFilePaths?: string[];
+  /** New Supabase object paths (`our-works/<uuid>.png`) from direct uploads. */
+  imageObjectPaths?: unknown;
   category: string;
 }
 
@@ -62,7 +71,9 @@ export interface UpdateOurWorkInput {
   playStoreUrl?: string | null;
   uploadedFilenames?: string[];
   uploadedFilePaths?: string[];
-  /** Relative paths or public URLs of images to remove */
+  /** New Supabase object paths (`our-works/<uuid>.png`) to append. */
+  imageObjectPaths?: unknown;
+  /** Stored paths or public URLs of images to remove */
   removeImages?: string[];
   category: string;
 }
@@ -81,11 +92,21 @@ function normalizeStoredPath(
     return '';
   }
 
-  // Accept absolute public URLs and strip the API base to get the stored path
   try {
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      const supabaseObjectPath = objectPathFromSupabasePublicUrl(
+        trimmed,
+        getImageBucket()
+      );
+      if (supabaseObjectPath) {
+        return supabaseObjectPath;
+      }
       const url = new URL(trimmed);
-      return url.pathname;
+      // Legacy API-hosted uploads
+      if (url.pathname.startsWith('/uploads/')) {
+        return url.pathname;
+      }
+      return url.pathname.replace(/^\/+/, '');
     }
   } catch {
     // fall through
@@ -95,13 +116,16 @@ function normalizeStoredPath(
     return trimmed;
   }
 
-  // Treat bare filenames as our-works paths
+  if (trimmed.startsWith('our-works/') || trimmed.startsWith('blogs/')) {
+    return trimmed;
+  }
+
   return storage.publicPathForFilename(trimmed, 'our-works');
 }
 
 function toOurWorkDto(
   work: OurWorkRow,
-  storage: FileStorage = fileStorage
+  storage: FileStorage = imageStorage
 ): OurWorkDto {
   return {
     id: work.id,
@@ -123,7 +147,7 @@ export interface PaginatedOurWorks {
 }
 
 export class OurWorkService {
-  constructor(private readonly storage: FileStorage = fileStorage) {}
+  constructor(private readonly storage: FileStorage = imageStorage) {}
 
   async list(page = 1, limit = 20): Promise<PaginatedOurWorks> {
     const skip = (page - 1) * limit;
@@ -165,15 +189,26 @@ export class OurWorkService {
     const playStoreUrl = toOptionalUrl(input.playStoreUrl) ?? null;
     const category = input.category;
     if (!title || !description) {
-      await this.cleanupUploadedFiles(input.uploadedFilePaths);
+      await this.cleanupUploadedFiles(
+        input.uploadedFilePaths,
+        input.uploadedFilenames
+      );
       throw new AppError('Title and description are required', 400);
     }
 
-    const images = (input.uploadedFilenames ?? []).map((filename) =>
-      this.storage.publicPathForFilename(filename, 'our-works')
-    );
-
+    let images: string[] = [];
     try {
+      const objectImages = await this.resolveNewImagePaths(
+        input.imageObjectPaths
+      );
+      const legacyImages = await this.persistUploads(
+        input.uploadedFilenames,
+        input.uploadedFilePaths
+      );
+
+      images = this.dedupeImages([...objectImages, ...legacyImages]);
+      this.assertImageLimit(images);
+
       const work = (await prisma.ourWork.create({
         data: {
           title,
@@ -188,7 +223,11 @@ export class OurWorkService {
       })) as OurWorkRow;
       return toOurWorkDto(work, this.storage);
     } catch (error) {
-      await this.cleanupUploadedFiles(input.uploadedFilePaths);
+      await this.cleanupUploadedFiles(
+        input.uploadedFilePaths,
+        input.uploadedFilenames
+      );
+      await Promise.all(images.map((path) => this.storage.deleteIfExists(path)));
       throw error;
     }
   }
@@ -200,7 +239,10 @@ export class OurWorkService {
     })) as OurWorkRow | null;
 
     if (!existing) {
-      await this.cleanupUploadedFiles(input.uploadedFilePaths);
+      await this.cleanupUploadedFiles(
+        input.uploadedFilePaths,
+        input.uploadedFilenames
+      );
       throw new AppError('Our work not found', 404);
     }
 
@@ -212,7 +254,10 @@ export class OurWorkService {
         : existing.description;
 
     if (!nextTitle || !nextDescription) {
-      await this.cleanupUploadedFiles(input.uploadedFilePaths);
+      await this.cleanupUploadedFiles(
+        input.uploadedFilePaths,
+        input.uploadedFilenames
+      );
       throw new AppError('Title and description cannot be empty', 400);
     }
 
@@ -238,15 +283,26 @@ export class OurWorkService {
     const retainedImages = existing.images.filter(
       (path) => !removeSet.has(path)
     );
-    const addedImages = (input.uploadedFilenames ?? []).map((filename) =>
-      this.storage.publicPathForFilename(filename, 'our-works')
-    );
-    const nextImages = [...retainedImages, ...addedImages];
     const removedImages = existing.images.filter((path) =>
       removeSet.has(path)
     );
 
+    let nextImages: string[] = retainedImages;
+    let addedImages: string[] = [];
     try {
+      const objectImages = await this.resolveNewImagePaths(
+        input.imageObjectPaths
+      );
+      const legacyImages = await this.persistUploads(
+        input.uploadedFilenames,
+        input.uploadedFilePaths
+      );
+      addedImages = [...objectImages, ...legacyImages];
+
+      // Preserve existing order, then append new paths in submitted order.
+      nextImages = this.dedupeImages([...retainedImages, ...addedImages]);
+      this.assertImageLimit(nextImages);
+
       const work = (await prisma.ourWork.update({
         where: { id: input.id },
         data: {
@@ -267,7 +323,13 @@ export class OurWorkService {
 
       return toOurWorkDto(work, this.storage);
     } catch (error) {
-      await this.cleanupUploadedFiles(input.uploadedFilePaths);
+      await this.cleanupUploadedFiles(
+        input.uploadedFilePaths,
+        input.uploadedFilenames
+      );
+      await Promise.all(
+        addedImages.map((path) => this.storage.deleteIfExists(path))
+      );
       throw error;
     }
   }
@@ -287,22 +349,118 @@ export class OurWorkService {
     );
   }
 
-  private async cleanupUploadedFiles(filePaths?: string[]): Promise<void> {
-    if (!filePaths?.length) {
-      return;
+  private async resolveNewImagePaths(value: unknown): Promise<string[]> {
+    if (value === undefined || value === null || value === '') {
+      return [];
     }
 
-    await Promise.all(
-      filePaths.map(async (filePath) => {
-        const filename = filePath.split(/[/\\]/).pop();
-        if (!filename) {
-          return;
-        }
-        await this.storage.deleteIfExists(
-          this.storage.publicPathForFilename(filename, 'our-works')
-        );
-      })
+    const list = Array.isArray(value) ? value : [value];
+
+    // Validate + dedupe synchronously (preserving submitted order, throwing on
+    // the first invalid path) before doing any network calls.
+    const resolved: string[] = [];
+    const seen = new Set<string>();
+    for (const item of list) {
+      // Only this feature's prefix is accepted; rejects traversal,
+      // other-feature paths, local paths and external URLs.
+      const path = resolveImageObjectPath(item, 'our-works', getImageBucket());
+      if (!path) {
+        throw new AppError('Invalid our works image path', 400);
+      }
+      if (seen.has(path)) {
+        continue;
+      }
+      seen.add(path);
+      resolved.push(path);
+    }
+
+    // Verify existence in parallel (read-only checks).
+    const existence = await Promise.all(
+      resolved.map((path) => this.storage.exists(path))
     );
+    if (existence.some((exists) => !exists)) {
+      throw new AppError(
+        'Uploaded our works image was not found in storage',
+        400
+      );
+    }
+
+    return resolved;
+  }
+
+  private dedupeImages(paths: string[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const path of paths) {
+      if (!path || seen.has(path)) {
+        continue;
+      }
+      seen.add(path);
+      result.push(path);
+    }
+    return result;
+  }
+
+  private assertImageLimit(images: string[]): void {
+    if (images.length > MAX_OUR_WORK_IMAGES) {
+      throw new AppError(
+        `A maximum of ${MAX_OUR_WORK_IMAGES} images is allowed`,
+        400
+      );
+    }
+  }
+
+  private async persistUploads(
+    filenames?: string[],
+    filePaths?: string[]
+  ): Promise<string[]> {
+    if (!filenames?.length || !filePaths?.length) {
+      return [];
+    }
+
+    // Persist uploads in parallel; results keep the submitted order.
+    const stored = await Promise.all(
+      filenames.map((filename, i) =>
+        filename && filePaths[i]
+          ? this.storage.persistLocalUpload(
+              filePaths[i],
+              filename,
+              'our-works'
+            )
+          : Promise.resolve(null)
+      )
+    );
+
+    return stored.filter((path): path is string => Boolean(path));
+  }
+
+  private async cleanupUploadedFiles(
+    filePaths?: string[],
+    filenames?: string[]
+  ): Promise<void> {
+    if (filePaths?.length) {
+      await Promise.all(
+        filePaths.map(async (filePath) => {
+          try {
+            if (fs.existsSync(filePath)) {
+              await fs.promises.unlink(filePath);
+            }
+          } catch {
+            // ignore
+          }
+        })
+      );
+    }
+
+    if (filenames?.length) {
+      await Promise.all(
+        filenames.map((filename) =>
+          this.storage.deleteIfExists(
+            this.storage.publicPathForFilename(filename, 'our-works')
+          )
+        )
+      );
+    }
   }
 }
 

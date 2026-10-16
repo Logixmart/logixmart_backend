@@ -121,6 +121,7 @@ export class ClientReviewService {
   async update(input: UpdateClientReviewInput): Promise<ClientReview> {
     const existing = await prisma.clientReview.findUnique({
       where: { id: input.id },
+      select: { id: true },
     });
 
     if (!existing) {
@@ -175,7 +176,10 @@ export class ClientReviewService {
   }
 
   async delete(id: string): Promise<void> {
-    const existing = await prisma.clientReview.findUnique({ where: { id } });
+    const existing = await prisma.clientReview.findUnique({
+      where: { id },
+      select: { id: true },
+    });
 
     if (!existing) {
       throw new AppError('Client review not found', 404);

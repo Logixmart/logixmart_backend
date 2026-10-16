@@ -7,6 +7,7 @@ import jobApplicationRouter from './jobApplication.routes';
 import contactRouter from './contact.routes';
 import clientReviewRouter from './clientReview.routes';
 import ourWorksRouter from './ourWorks';
+import storageRouter from './storage';
 
 const router = Router();
 
@@ -17,6 +18,7 @@ router.use('/job-applications', jobApplicationRouter);
 router.use('/contact', contactRouter);
 router.use('/client-reviews', clientReviewRouter);
 router.use('/our-works', ourWorksRouter);
+router.use('/storage', storageRouter);
 
 router.get('/', (_req: Request, res: Response) => {
   res.json({

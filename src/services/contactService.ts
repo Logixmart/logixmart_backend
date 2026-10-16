@@ -6,6 +6,7 @@ import {
   PaginationMeta,
 } from '../utils/pagination';
 import { isValidEmail, optionalTrim, parseSearchTerm } from '../utils/validation';
+import { emailService } from './mail';
 
 type ContactSubmission = NonNullable<
   Awaited<ReturnType<typeof prisma.contactSubmission.findFirst>>
@@ -64,7 +65,36 @@ export class ContactService {
       },
     });
 
+    // Notify the client-query recipient only after the query is durably saved.
+    // Notification failures must never affect storage or the API response.
+    await this.notifyClientQuery(contact);
+
     return contact;
+  }
+
+  private async notifyClientQuery(contact: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    subject: string | null;
+    message: string;
+    createdAt: Date;
+  }): Promise<void> {
+    try {
+      await emailService.sendClientQueryNotification({
+        id: contact.id,
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        subject: contact.subject,
+        message: contact.message,
+        createdAt: contact.createdAt,
+      });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'unknown error';
+      console.error('[mail] Client query notification error:', reason);
+    }
   }
 
   async list(query: ListContactsQuery): Promise<PaginatedContacts> {
@@ -103,6 +133,7 @@ export class ContactService {
   async delete(id: string): Promise<void> {
     const existing = await prisma.contactSubmission.findUnique({
       where: { id },
+      select: { id: true },
     });
 
     if (!existing) {

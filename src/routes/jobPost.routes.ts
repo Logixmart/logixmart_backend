@@ -9,7 +9,7 @@ import {
   updateJobPost,
   deleteJobPost,
 } from '../controllers/JobPost';
-import { createJobApplication } from '../controllers/JobApplication';
+import { createJobApplication, createJobApplicationResumeUploadUrl } from '../controllers/JobApplication';
 
 const router = Router();
 
@@ -17,7 +17,14 @@ const router = Router();
 router.get('/', getJobPosts);
 router.get('/:id', getJobPostById);
 
-// Public apply (multipart, optional resume)
+// Public direct-to-Supabase resume upload URL (JSON, no auth)
+router.post(
+  '/:jobId/applications/resume/upload-url',
+  applicationLimiter,
+  createJobApplicationResumeUploadUrl
+);
+
+// Public apply (multipart, optional resume; resumePath accepted for direct uploads)
 router.post(
   '/:jobId/applications',
   applicationLimiter,

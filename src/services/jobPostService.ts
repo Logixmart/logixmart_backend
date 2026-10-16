@@ -128,6 +128,7 @@ export class JobPostService {
   async update(input: UpdateJobPostInput): Promise<JobPost> {
     const existingJob = await prisma.jobPost.findFirst({
       where: { id: input.id, isDeleted: false },
+      select: { id: true },
     });
 
     if (!existingJob) {
@@ -183,6 +184,7 @@ export class JobPostService {
   async delete(id: string): Promise<void> {
     const existingJob = await prisma.jobPost.findFirst({
       where: { id, isDeleted: false },
+      select: { id: true },
     });
 
     if (!existingJob) {

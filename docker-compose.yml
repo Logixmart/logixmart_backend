@@ -8,7 +8,8 @@ services:
       POSTGRES_PASSWORD: Password@123
       POSTGRES_DB: logixmart
     ports:
-      - "5432:5432"
+      # 5433 avoids clash when another Postgres already uses host 5432
+      - "5433:5432"
     volumes:
       - logixmart_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -26,13 +27,14 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      DATABASE_URL: postgresql://logixmart:logixmart@postgres:5432/logixmart?schema=public
+      DATABASE_URL: postgresql://logixmart:Password%40123@postgres:5432/logixmart?schema=public
       API_BASE_URL: ${API_BASE_URL:-http://localhost:5000}
       # Host path ./uploads is mounted at /app/uploads so blog/resume files persist & serve
       UPLOAD_DIR: uploads
-      JWT_SECRET: ${JWT_SECRET:-supersecretjwtkeyforadminpanel}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@logixmart.com}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Password@123}
+      JWT_SECRET: ${JWT_SECRET:?Set a strong unique JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set a strong unique JWT_REFRESH_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set a strong unique ADMIN_PASSWORD}
     volumes:
       # Persist and serve local upload files inside the container
       - ./uploads:/app/uploads

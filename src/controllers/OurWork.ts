@@ -1,33 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ourWorkService } from '../services/ourWorkService';
 import { parsePaginationQuery } from '../utils/pagination';
-
-function parseRemoveImages(value: unknown): string[] | undefined {
-  if (value === undefined || value === null || value === '') {
-    return undefined;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(String);
-  }
-
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        return parsed.map(String);
-      }
-    } catch {
-      // Comma-separated fallback
-      return value
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
-    }
-  }
-
-  return undefined;
-}
+import { parseStringArray } from '../utils/validation';
 
 function uploadedFiles(req: Request): Express.Multer.File[] {
   if (Array.isArray(req.files)) {
@@ -88,7 +62,8 @@ export const createOurWork = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, description, websiteUrl, appStoreUrl, playStoreUrl, category } = req.body;
+    const { title, description, websiteUrl, appStoreUrl, playStoreUrl, category, imageUrls } =
+      req.body;
     const files = uploadedFiles(req);
 
     const work = await ourWorkService.create({
@@ -99,6 +74,7 @@ export const createOurWork = async (
       playStoreUrl,
       uploadedFilenames: files.map((file) => file.filename),
       uploadedFilePaths: files.map((file) => file.path),
+      imageObjectPaths: parseStringArray(imageUrls),
       category,
     });
 
@@ -122,8 +98,16 @@ export const updateOurWork = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, description, websiteUrl, appStoreUrl, playStoreUrl, removeImages, category } =
-      req.body;
+    const {
+      title,
+      description,
+      websiteUrl,
+      appStoreUrl,
+      playStoreUrl,
+      removeImages,
+      imageUrls,
+      category,
+    } = req.body;
     const files = uploadedFiles(req);
 
     const work = await ourWorkService.update({
@@ -134,7 +118,8 @@ export const updateOurWork = async (
       appStoreUrl,
       playStoreUrl,
       category,
-      removeImages: parseRemoveImages(removeImages),
+      removeImages: parseStringArray(removeImages),
+      imageObjectPaths: parseStringArray(imageUrls),
       uploadedFilenames: files.map((file) => file.filename),
       uploadedFilePaths: files.map((file) => file.path),
     });
