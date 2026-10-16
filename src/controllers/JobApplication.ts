@@ -1,5 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
 import { jobApplicationService } from '../services/jobApplicationService';
+import { resumeUploadService } from '../services/resumeUploadService';
+
+/**
+ * Create a signed Supabase upload URL for a resume (public applicant).
+ * POST /api/job-posts/:jobId/applications/resume/upload-url
+ *
+ * The backend generates the object path; the applicant uploads the file bytes
+ * directly to the private bucket and then submits the returned path.
+ */
+export const createJobApplicationResumeUploadUrl = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await resumeUploadService.createUploadUrl({
+      jobId: req.params.jobId,
+      filename: req.body?.filename,
+      contentType: req.body?.contentType,
+      size: req.body?.size,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * Apply for a job (public)
@@ -124,9 +154,29 @@ export const downloadJobApplicationResume = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { filePath, filename } =
-      await jobApplicationService.getResumeDownloadInfo(String(req.params.id));
-    res.download(filePath, filename);
+    const info = await jobApplicationService.getResumeDownloadInfo(
+      String(req.params.id)
+    );
+
+    if (info.buffer) {
+      res.setHeader(
+        'Content-Type',
+        info.contentType || 'application/octet-stream'
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${info.filename.replace(/"/g, '')}"`
+      );
+      res.send(info.buffer);
+      return;
+    }
+
+    if (info.filePath) {
+      res.download(info.filePath, info.filename);
+      return;
+    }
+
+    next(new Error('Resume file not available'));
   } catch (error) {
     next(error);
   }

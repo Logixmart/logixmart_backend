@@ -1,21 +1,39 @@
 /**
  * Abstract file storage interface.
- * Swap LocalFileStorage for an S3 implementation later without changing business logic.
+ * Local disk and Supabase Storage share this contract.
  */
+export type UploadFolder = 'blogs' | 'resumes' | 'our-works';
+
 export interface FileStorage {
   getPublicUrl(storedPath: string): string;
 
   /**
-   * Delete a file identified by its public/relative path (e.g. /uploads/blogs/x.jpg).
-   * Missing files are ignored. Path traversal and paths outside allowed roots are rejected.
+   * Delete a file identified by its stored path
+   * (e.g. /uploads/blogs/x.jpg or blogs/x.jpg in Supabase).
+   * Missing files are ignored.
    */
   deleteIfExists(storedPath: string | null | undefined): Promise<void>;
 
   /**
-   * Build the public relative path for a file under uploads/<folder>/.
+   * Whether the object identified by its stored path currently exists.
+   * Read-only; missing/invalid paths return false.
    */
-  publicPathForFilename(
+  exists(storedPath: string | null | undefined): Promise<boolean>;
+
+  /**
+   * Build the durable storage path for a file under a folder.
+   */
+  publicPathForFilename(filename: string, folder?: UploadFolder): string;
+
+  /**
+   * Persist a Multer temp file into durable storage.
+   * Returns the path to store in the database (not a binary).
+   * Local storage: file already on disk — returns publicPathForFilename.
+   * Supabase: uploads to bucket, removes local temp, returns object path.
+   */
+  persistLocalUpload(
+    localFilePath: string,
     filename: string,
-    folder?: 'blogs' | 'resumes' | 'our-works'
-  ): string;
+    folder?: UploadFolder
+  ): Promise<string>;
 }
