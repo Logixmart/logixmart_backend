@@ -1,6 +1,8 @@
 import app from './app';
-import { config } from './config';
+import { config, validateMailConfig } from './config';
 import prisma from './lib/prisma';
+
+validateMailConfig();
 
 const server = app.listen(config.port, () => {
   console.log(`=================================`);
