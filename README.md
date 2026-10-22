@@ -81,7 +81,9 @@ Edit `.env` and set real values (never commit `.env`):
 | `SUPABASE_SECRET_KEY` | Server-only service-role/secret key — never expose to the frontend |
 | `SUPABASE_IMAGE_BUCKET` | Public image bucket (default `user-images`) |
 | `SUPABASE_RESUME_BUCKET` | Private resume bucket (default `private-resumes`) |
-| `SMTP_HOST` | Outbound SMTP host (from email administrator) |
+| `MAIL_PROVIDER` | Email provider: `smtp` (default) or `resend` |
+| `RESEND_API_KEY` | Resend API key — server-only; required when `MAIL_PROVIDER=resend` |
+| `SMTP_HOST` | Outbound SMTP host (when `MAIL_PROVIDER=smtp`) |
 | `SMTP_PORT` | SMTP port (`587` STARTTLS or `465` TLS) |
 | `SMTP_SECURE` | `true` for implicit TLS (465), `false` for STARTTLS (587) |
 | `SMTP_USER` | SMTP username |
@@ -380,10 +382,10 @@ npm run check:storage
 If it is missing, create it in the Supabase Dashboard (Storage → New bucket,
 name `user-images`, public) — the backend never creates or changes buckets.
 
-### Email notifications (SMTP)
+### Email notifications
 
-The backend sends two transactional notifications through a single Nodemailer
-transport:
+The backend sends two transactional notifications using the configured mail
+provider:
 
 | Notification | Trigger | Recipient env var |
 |--------------|---------|-------------------|
@@ -397,7 +399,7 @@ failures are logged without exposing credentials, tokens, or resume paths.
 Resumes are never attached or linked — HR downloads them from the authorized
 admin endpoint.
 
-#### Provider identification status (not confirmed)
+#### SMTP provider identification (if using SMTP)
 
 - The provider is **not yet confirmed**. No hostname, port, password, or sender
   address is hardcoded; all connection settings are environment-driven.
@@ -412,9 +414,9 @@ admin endpoint.
   2-Step Verification enabled) is typically required for SMTP AUTH; the
   administrator must authorize the sending address/alias.
 
-#### Configure
+#### Configure SMTP
 
-Copy `.env.example` to `.env` and fill in the SMTP values (never commit `.env`):
+Set `MAIL_PROVIDER=smtp` and configure SMTP values (never commit `.env`):
 
 ```dotenv
 SMTP_HOST=<smtp-host-from-email-admin>
@@ -428,18 +430,38 @@ CLIENT_QUERY_EMAIL=abhinav.kumar@logixmart.com
 ADMIN_APP_URL=            # optional; enables the application link in HR email
 ```
 
-If SMTP is not configured, the server logs a warning at startup and skips
-notifications — the API continues to work normally.
+#### Configure Resend HTTPS API
+
+Use Resend when SMTP egress is unavailable. Set `MAIL_PROVIDER=resend`,
+`RESEND_API_KEY`, and `MAIL_FROM`. The sender must be a verified domain/address
+in your Resend account. The backend calls Resend's HTTPS API directly; no SMTP
+connection is used.
+
+#### Render deployment
+
+For a Render-hosted backend, add the mail variables under the backend web
+service's **Environment** settings; the repository `.env` is not deployed.
+For the Resend API, set `MAIL_PROVIDER=resend`, `RESEND_API_KEY`, `MAIL_FROM`,
+and `HR_NOTIFICATION_EMAIL` (plus `CLIENT_QUERY_EMAIL` for contact
+notifications). Save the changes and redeploy/restart the service so the
+running process loads them. Keep the API key backend-only.
+
+**Render Free web services cannot send outbound SMTP traffic on ports 25, 465,
+or 587** (port 25 is blocked for all Render services). If the backend uses the
+Free plan, SMTP delivery will fail even when the variables are correct. Use
+Resend's HTTPS API or upgrade to a service plan that permits SMTP egress. See
+Render's [free instance limitations](https://render.com/docs/free).
 
 #### Safe verification
 
-Check connectivity and authentication **without sending any email**:
+For SMTP only, check connectivity and authentication **without sending email**:
 
 ```bash
 npm run check:smtp
 ```
 
-This calls `transporter.verify()` and never prints credentials.
+This calls `transporter.verify()` and never prints credentials. It verifies
+the environment where the command runs, not another deployment's environment.
 
 **Real delivery test (requires approval):** after the administrator approves a
 one-off test, temporarily set both recipient variables to a mailbox you control

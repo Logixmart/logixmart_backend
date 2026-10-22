@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "rimraf dist && prisma generate && tsc --incremental false",
-    "start": "node dist/server.js",
+    "dev": "node api.js && ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "node api.js && rimraf dist && prisma generate && tsc --incremental false",
+    "start": "node api.js && node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "node --test",
     "check:storage": "node scripts/verify-supabase-storage.js",
