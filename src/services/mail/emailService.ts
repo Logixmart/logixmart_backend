@@ -1,4 +1,4 @@
-import { config } from '../../config';
+import { config, isMailConfigured } from '../../config';
 import { isValidEmail } from '../../utils/validation';
 import {
   ClientQueryEmailData,
@@ -8,6 +8,7 @@ import {
   RenderedEmail,
 } from './emailTemplates';
 import { getMailTransport } from './mailTransport';
+import { sendWithResend } from './resendTransport';
 
 export interface MailMessage extends RenderedEmail {
   to: string;
@@ -20,25 +21,37 @@ export interface MailMessage extends RenderedEmail {
  */
 export class EmailService {
   async send(message: MailMessage): Promise<boolean> {
-    const transport = getMailTransport();
-    if (!transport) {
-      console.warn('[mail] Notification skipped: SMTP is not configured.');
-      return false;
-    }
-
     if (!isValidEmail(message.to)) {
       console.error('[mail] Notification skipped: recipient is not a valid email address.');
       return false;
     }
 
+    if (!isMailConfigured()) {
+      console.warn('[mail] Notification skipped: email provider is not configured.');
+      return false;
+    }
+
     try {
-      await transport.sendMail({
-        from: config.mail.from,
-        to: message.to,
-        subject: message.subject,
-        text: message.text,
-        html: message.html,
-      });
+      if (config.mail.provider === 'resend') {
+        await sendWithResend(
+          message,
+          config.mail.resendApiKey,
+          config.mail.from
+        );
+      } else {
+        const transport = getMailTransport();
+        if (!transport) {
+          console.warn('[mail] Notification skipped: SMTP is not configured.');
+          return false;
+        }
+        await transport.sendMail({
+          from: config.mail.from,
+          to: message.to,
+          subject: message.subject,
+          text: message.text,
+          html: message.html,
+        });
+      }
       return true;
     } catch (error) {
       // Never log credentials, tokens or resume paths.

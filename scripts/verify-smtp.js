@@ -19,6 +19,12 @@ const { config, isMailConfigured, getMissingMailVars } = require('../src/config'
 const { getMailTransport } = require('../src/services/mail/mailTransport');
 
 async function main() {
+  if (config.mail.provider !== 'smtp') {
+    console.error('SMTP verification requires MAIL_PROVIDER=smtp.');
+    process.exitCode = 1;
+    return;
+  }
+
   if (!isMailConfigured()) {
     console.error(
       `SMTP is not configured. Missing: ${getMissingMailVars().join(', ') || 'SMTP_HOST, MAIL_FROM'}`

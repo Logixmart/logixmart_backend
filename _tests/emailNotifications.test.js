@@ -3,6 +3,7 @@
 // Must be set before the config module is first loaded.
 process.env.SMTP_HOST = process.env.SMTP_HOST || 'smtp.test.invalid';
 process.env.MAIL_FROM = process.env.MAIL_FROM || 'no-reply@logixmart.com';
+process.env.RESEND_API_KEY = 're_test_key';
 process.env.HR_NOTIFICATION_EMAIL = 'hr@logixmart.com';
 process.env.CLIENT_QUERY_EMAIL = 'contact@logixmart.com';
 
@@ -159,6 +160,48 @@ test('SMTP failure does not delete a saved application or fail the request', asy
   const { status } = await postJson('/api/job-posts/job-1/applications', APPLICATION);
   assert.equal(status, 201);
   assert.equal(fakePrisma._state.applications.length, 1);
+});
+
+test('Resend sends job notifications through its HTTPS API', async () => {
+  const { config } = require('../src/config');
+  const originalProvider = config.mail.provider;
+  const originalApiKey = config.mail.resendApiKey;
+  const originalFetch = global.fetch;
+  const requests = [];
+
+  config.mail.provider = 'resend';
+  config.mail.resendApiKey = 're_test_key';
+  global.fetch = async (url, options) => {
+    if (String(url) === 'https://api.resend.com/emails') {
+      requests.push({ url, options });
+      return { ok: true, status: 200 };
+    }
+    return originalFetch(url, options);
+  };
+
+  try {
+    const { status } = await postJson(
+      '/api/job-posts/job-1/applications',
+      APPLICATION
+    );
+    assert.equal(status, 201);
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, 'https://api.resend.com/emails');
+    assert.equal(requests[0].options.method, 'POST');
+    assert.equal(
+      requests[0].options.headers.Authorization,
+      'Bearer re_test_key'
+    );
+    const payload = JSON.parse(requests[0].options.body);
+    assert.equal(payload.from, 'no-reply@logixmart.com');
+    assert.deepEqual(payload.to, ['hr@logixmart.com']);
+    assert.match(payload.subject, /Senior Engineer/);
+    assert.match(payload.html, /Jane Doe/);
+  } finally {
+    config.mail.provider = originalProvider;
+    config.mail.resendApiKey = originalApiKey;
+    global.fetch = originalFetch;
+  }
 });
 
 // --- Client query notifications --------------------------------------------

@@ -2,13 +2,34 @@
   "info": {
     "_postman_id": "d0d6c1b3-4f27-4a0b-9dfd-7c22e584f3eb",
     "name": "Logixmart Backend API",
-    "description": "API collection for Logixmart Backend, including general routes and admin authentication.",
+    "description": "Complete Logixmart Backend API collection. Set service_url for the host and base_url to the host plus /api.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "General Routes",
       "item": [
+        {
+          "name": "Service Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{service_url}}/",
+              "host": [
+                "{{service_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Checks the service root endpoint.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
         {
           "name": "Get API Welcome",
           "request": {
@@ -23,7 +44,7 @@
                 ""
               ]
             },
-            "description": "Returns welcome message and API version."
+            "description": "Returns the API welcome message and version."
           },
           "response": []
         },
@@ -41,7 +62,7 @@
                 "health"
               ]
             },
-            "description": "Checks database and application status."
+            "description": "Checks application and database connectivity; configure Render health checks to use /api/health."
           },
           "response": []
         }
@@ -56,20 +77,14 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Response contains token\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.success).to.eql(true);",
-                  "    pm.expect(jsonData.token).to.not.be.undefined;",
-                  "    // Save token as a environment or collection variable for reuse",
-                  "    pm.collectionVariables.set(\"admin_token\", jsonData.token);",
-                  "});"
-                ],
-                "type": "text/javascript"
+                  "pm.test(\"Login succeeds\", function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.expect(data.success).to.eql(true);",
+                  "pm.collectionVariables.set(\"admin_token\", data.accessToken || data.token);",
+                  "pm.collectionVariables.set(\"refresh_token\", data.refreshToken);"
+                ]
               }
             }
           ],
@@ -96,7 +111,10 @@
                 "login"
               ]
             },
-            "description": "Authenticates the admin user and returns a JWT token."
+            "description": "Authenticates the admin user and returns a JWT token.",
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
@@ -144,7 +162,10 @@
                 "login"
               ]
             },
-            "description": "Verifies that incorrect credentials fail authentication with 401."
+            "description": "Verifies that incorrect credentials fail authentication with 401.",
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
@@ -192,7 +213,10 @@
                 "login"
               ]
             },
-            "description": "Verifies that missing password fails validation with 400."
+            "description": "Verifies that missing password fails validation with 400.",
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
@@ -200,13 +224,7 @@
           "name": "Admin Logout",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}",
-                "type": "text"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{base_url}}/admin/logout",
               "host": [
@@ -218,6 +236,146 @@
               ]
             },
             "description": "Logs out the admin and prompts the client to discard the session token."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Admin Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Admin Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Admin User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Admin\",\n  \"email\": \"new-admin@example.com\",\n  \"password\": \"ChangeMe123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Admin User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{admin_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{admin_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Admin\",\n  \"email\": \"new-admin@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Admin User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{admin_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{admin_id}}"
+              ]
+            }
           },
           "response": []
         }
@@ -232,15 +390,30 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/blogs",
+              "raw": "{{base_url}}/blogs?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "blogs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "type": "text"
+                }
               ]
             },
-            "description": "Retrieves list of all blogs, sorted by newest first."
+            "description": "Retrieves list of all blogs, sorted by newest first.",
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
@@ -269,13 +442,7 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}",
-                "type": "text"
-              }
-            ],
+            "header": [],
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -324,7 +491,10 @@
                 "{{blog_id}}"
               ]
             },
-            "description": "Retrieves the details of a single blog by its ID."
+            "description": "Retrieves the details of a single blog by its ID.",
+            "auth": {
+              "type": "noauth"
+            }
           },
           "response": []
         },
@@ -332,13 +502,7 @@
           "name": "Update Blog",
           "request": {
             "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}",
-                "type": "text"
-              }
-            ],
+            "header": [],
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -377,13 +541,7 @@
           "name": "Delete Blog",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}",
-                "type": "text"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{base_url}}/blogs/{{blog_id}}",
               "host": [
@@ -399,9 +557,802 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Job Posts",
+      "item": [
+        {
+          "name": "List Job Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/job-posts?page=1&limit=10&active=true?page=1&limit=10&active=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-posts?page=1&limit=10&active=true"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Post",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/job-posts/{{job_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-posts",
+                "{{job_id}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Job Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/job-posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-posts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Backend Engineer\",\n  \"description\": \"Build and maintain backend services.\",\n  \"location\": \"Remote\",\n  \"employmentType\": \"Full-time\",\n  \"experience\": \"2+ years\",\n  \"skills\": [\n    \"Node.js\",\n    \"TypeScript\"\n  ],\n  \"responsibilities\": [\n    \"Build APIs\"\n  ],\n  \"qualifications\": [\n    \"Relevant experience\"\n  ],\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Job Post",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/job-posts/{{job_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-posts",
+                "{{job_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Job Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/job-posts/{{job_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-posts",
+                "{{job_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Resume Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/job-posts/{{job_id}}/applications/resume/upload-url",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-posts",
+                "{{job_id}}",
+                "applications",
+                "resume",
+                "upload-url"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"resume.pdf\",\n  \"contentType\": \"application/pdf\",\n  \"size\": 1024\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Job Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/job-posts/{{job_id}}/applications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-posts",
+                "{{job_id}}",
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicantName\": \"Example Applicant\",\n  \"email\": \"applicant@example.com\",\n  \"phone\": \"+10000000000\",\n  \"coverLetter\": \"I am interested in this role.\",\n  \"portfolioUrl\": \"https://example.com\",\n  \"linkedinUrl\": \"https://linkedin.com/in/example\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Job Applications",
+      "item": [
+        {
+          "name": "List Job Applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/job-applications?page=1&limit=10?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-applications?page=1&limit=10"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Job Applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/job-applications/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-applications",
+                "export"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Application",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/job-applications/{{application_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-applications",
+                "{{application_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Application Resume",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/job-applications/{{application_id}}/resume",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-applications",
+                "{{application_id}}",
+                "resume"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Application Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/job-applications/{{application_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-applications",
+                "{{application_id}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"REVIEWING\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Job Application",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/job-applications/{{application_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "job-applications",
+                "{{application_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Contact",
+      "item": [
+        {
+          "name": "Submit Contact Form",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/contact",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contact"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Example User\",\n  \"email\": \"user@example.com\",\n  \"phone\": \"+10000000000\",\n  \"subject\": \"Website inquiry\",\n  \"message\": \"Please contact me.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Contact Submissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contact?page=1&limit=10?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contact?page=1&limit=10"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Contact Submissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contact/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contact",
+                "export"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact Submission",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contact/{{contact_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contact",
+                "{{contact_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Client Reviews",
+      "item": [
+        {
+          "name": "List Client Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/client-reviews?page=1&limit=10?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "client-reviews?page=1&limit=10"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Client Review",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/client-reviews/{{review_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "client-reviews",
+                "{{review_id}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Client Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/client-reviews",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "client-reviews"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientName\": \"Example Client\",\n  \"companyName\": \"Example Co.\",\n  \"email\": \"client@example.com\",\n  \"designation\": \"Director\",\n  \"message\": \"Great service.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Client Review",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/client-reviews/{{review_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "client-reviews",
+                "{{review_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Updated review.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Client Review",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/client-reviews/{{review_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "client-reviews",
+                "{{review_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Our Works",
+      "item": [
+        {
+          "name": "List Our Works",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/our-works?page=1&limit=10?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "our-works?page=1&limit=10"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Our Work",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/our-works/{{work_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "our-works",
+                "{{work_id}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Our Work",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/our-works",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "our-works"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Example Project\",\n  \"description\": \"A sample project description.\",\n  \"category\": \"App Development\",\n  \"websiteUrl\": \"https://example.com\",\n  \"appStoreUrl\": \"\",\n  \"playStoreUrl\": \"\",\n  \"imageUrls\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Our Work",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/our-works/{{work_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "our-works",
+                "{{work_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Project\",\n  \"description\": \"Updated project description.\",\n  \"category\": \"App Development\",\n  \"imageUrls\": [],\n  \"removeImages\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Our Work",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/our-works/{{work_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "our-works",
+                "{{work_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Storage",
+      "item": [
+        {
+          "name": "Create Image Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/storage/upload-url",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "storage",
+                "upload-url"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folder\": \"blogs\",\n  \"filename\": \"image.png\",\n  \"contentType\": \"image/png\",\n  \"size\": 1024\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
+    {
+      "key": "service_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
     {
       "key": "base_url",
       "value": "http://localhost:5000/api",
@@ -413,9 +1364,54 @@
       "type": "string"
     },
     {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_id",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "blog_id",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "job_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "application_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contact_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "review_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "work_id",
+      "value": "",
+      "type": "string"
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_token}}",
+        "type": "string"
+      }
+    ]
+  }
 }
