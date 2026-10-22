@@ -39,6 +39,14 @@ function parseBool(value: string | undefined, fallback = false): boolean {
 }
 
 const mailPort = Number(process.env.SMTP_PORT) || 587;
+function parseMailProvider(value: string | undefined): 'smtp' | 'resend' {
+  const normalized = value?.trim().toLowerCase() || 'smtp';
+  if (normalized === 'smtp' || normalized === 'resend') {
+    return normalized;
+  }
+  throw new Error('MAIL_PROVIDER must be either "smtp" or "resend".');
+}
+const mailProvider = parseMailProvider(process.env.MAIL_PROVIDER);
 
 // Preserve the production startup guard for the database URL. The value
 // itself is consumed by Prisma (via .env), so it is not stored on `config`.
@@ -81,16 +89,17 @@ export const config = {
   supabaseResumeBucket:
     process.env.SUPABASE_RESUME_BUCKET?.trim() || 'private-resumes',
   /**
-   * Outbound email (SMTP). Provider is not yet confirmed — all connection
-   * settings are configurable and never defaulted to a guessed provider.
-   * Credentials (`SMTP_PASS`) must never be logged or committed.
+   * Outbound email provider and credentials are backend-only and must never
+   * be logged or committed.
    */
   mail: {
+    provider: mailProvider,
     host: process.env.SMTP_HOST?.trim() || '',
     port: mailPort,
     secure: parseBool(process.env.SMTP_SECURE, false),
     user: process.env.SMTP_USER?.trim() || '',
     pass: process.env.SMTP_PASS || '',
+    resendApiKey: process.env.RESEND_API_KEY?.trim() || '',
     from: process.env.MAIL_FROM?.trim() || '',
     /** Job application notifications. */
     hrNotificationEmail: process.env.HR_NOTIFICATION_EMAIL?.trim() || '',
@@ -111,20 +120,27 @@ export function hasSupabaseStorageConfig(): boolean {
 }
 
 /**
- * True when the minimum SMTP settings needed to send mail are present.
+ * True when the selected provider's credentials and sender are configured.
  * Recipients are validated per notification type.
  */
 export function isMailConfigured(): boolean {
+  if (config.mail.provider === 'resend') {
+    return Boolean(config.mail.resendApiKey && config.mail.from);
+  }
   return Boolean(config.mail.host && config.mail.from);
 }
 
 /**
- * Names of missing SMTP variables. Returns names only — never values — so it
- * is safe to log or print.
+ * Names of missing email configuration variables. Returns names only —
+ * never values — so it is safe to log or print.
  */
 export function getMissingMailVars(): string[] {
   const missing: string[] = [];
-  if (!config.mail.host) missing.push('SMTP_HOST');
+  if (config.mail.provider === 'resend') {
+    if (!config.mail.resendApiKey) missing.push('RESEND_API_KEY');
+  } else if (!config.mail.host) {
+    missing.push('SMTP_HOST');
+  }
   if (!config.mail.from) missing.push('MAIL_FROM');
   if (!config.mail.hrNotificationEmail) missing.push('HR_NOTIFICATION_EMAIL');
   if (!config.mail.clientQueryEmail) missing.push('CLIENT_QUERY_EMAIL');
@@ -138,9 +154,13 @@ export function getMissingMailVars(): string[] {
  */
 export function validateMailConfig(): void {
   if (isMailConfigured()) {
-    console.log(
-      `[mail] SMTP enabled (host=${config.mail.host}, port=${config.mail.port}, secure=${config.mail.secure})`
-    );
+    if (config.mail.provider === 'resend') {
+      console.log('[mail] Resend API enabled.');
+    } else {
+      console.log(
+        `[mail] SMTP enabled (host=${config.mail.host}, port=${config.mail.port}, secure=${config.mail.secure})`
+      );
+    }
     const missing = getMissingMailVars();
     if (missing.length) {
       console.warn(
@@ -151,6 +171,6 @@ export function validateMailConfig(): void {
   }
 
   console.warn(
-    `[mail] SMTP disabled — set ${getMissingMailVars().join(', ')} to enable email notifications.`
+    `[mail] Email notifications disabled — set ${getMissingMailVars().join(', ')} to enable them.`
   );
 }
