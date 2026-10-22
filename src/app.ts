@@ -74,6 +74,13 @@ app.use(
 
 app.use('/api', apiLimiter, apiRouter);
 
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'Logixmart Backend API is running',
+  });
+});
+
 app.use((req: Request, _res: Response, next: NextFunction) => {
   next(new AppError(`Not Found - ${req.originalUrl}`, 404));
 });

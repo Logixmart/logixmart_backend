@@ -13,15 +13,28 @@ const BOOTSTRAP_ADMIN_PASSWORD =
   process.env.ADMIN_PASSWORD || 'Password@123';
 const BOOTSTRAP_ADMIN_NAME = process.env.ADMIN_NAME || 'Super Admin';
 
-async function seedSuperAdmin(): Promise<{ created: boolean; skipped: boolean }> {
+async function seedSuperAdmin(): Promise<{
+  created: boolean;
+  updated: boolean;
+  skipped: boolean;
+}> {
   const email = BOOTSTRAP_ADMIN_EMAIL.trim().toLowerCase();
+  const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 12);
   const existing = await prisma.admin.findUnique({ where: { email } });
 
   if (existing) {
-    return { created: false, skipped: true };
+    // Keep local login in sync with .env ADMIN_PASSWORD
+    await prisma.admin.update({
+      where: { email },
+      data: {
+        passwordHash,
+        name: BOOTSTRAP_ADMIN_NAME,
+        role: AdminRole.SUPER_ADMIN,
+      },
+    });
+    return { created: false, updated: true, skipped: false };
   }
 
-  const passwordHash = await bcrypt.hash(BOOTSTRAP_ADMIN_PASSWORD, 12);
   await prisma.admin.create({
     data: {
       name: BOOTSTRAP_ADMIN_NAME,
@@ -31,14 +44,14 @@ async function seedSuperAdmin(): Promise<{ created: boolean; skipped: boolean }>
     },
   });
 
-  return { created: true, skipped: false };
+  return { created: true, updated: false, skipped: false };
 }
 
 async function main() {
   const superAdmin = await seedSuperAdmin();
 
   console.log(
-    `Seed complete. superAdmin created=${superAdmin.created} skipped=${superAdmin.skipped}`
+    `Seed complete. superAdmin created=${superAdmin.created} updated=${superAdmin.updated} skipped=${superAdmin.skipped}`
   );
 }
 

@@ -83,6 +83,7 @@ export class AdminService {
         refreshTokenHash: hashToken(refreshToken),
         refreshTokenExpiresAt: refreshTokenExpiryDate(),
       },
+      select: { id: true },
     });
 
     return { accessToken, refreshToken };
@@ -96,7 +97,16 @@ export class AdminService {
       throw new AppError('Email and password are required', 400);
     }
 
-    const admin = await prisma.admin.findUnique({ where: { email } });
+    const admin = await prisma.admin.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        passwordHash: true,
+      },
+    });
     if (!admin) {
       throw new AppError('Invalid email or password', 401);
     }
@@ -177,6 +187,7 @@ export class AdminService {
               refreshTokenHash: null,
               refreshTokenExpiresAt: null,
             },
+            select: { id: true },
           });
         }
       } catch {
@@ -198,6 +209,7 @@ export class AdminService {
               refreshTokenHash: null,
               refreshTokenExpiresAt: null,
             },
+            select: { id: true },
           });
         }
       } catch {
@@ -234,7 +246,10 @@ export class AdminService {
       throw new AppError('Password must be at least 8 characters', 400);
     }
 
-    const existing = await prisma.admin.findUnique({ where: { email } });
+    const existing = await prisma.admin.findUnique({
+      where: { email },
+      select: { id: true },
+    });
     if (existing) {
       throw new AppError('An admin with this email already exists', 409);
     }
@@ -255,7 +270,10 @@ export class AdminService {
     id: string,
     input: { name?: unknown; email?: unknown; password?: unknown }
   ): Promise<AdminSafe> {
-    const existing = await prisma.admin.findUnique({ where: { id } });
+    const existing = await prisma.admin.findUnique({
+      where: { id },
+      select: { name: true, email: true },
+    });
 
     if (!existing) {
       throw new AppError('Admin not found', 404);
@@ -285,6 +303,7 @@ export class AdminService {
     if (emailRaw !== existing.email) {
       const conflict = await prisma.admin.findUnique({
         where: { email: emailRaw },
+        select: { id: true },
       });
       if (conflict) {
         throw new AppError('An admin with this email already exists', 409);
@@ -312,7 +331,10 @@ export class AdminService {
   }
 
   async deleteAdmin(id: string, currentUserId?: string): Promise<void> {
-    const existing = await prisma.admin.findUnique({ where: { id } });
+    const existing = await prisma.admin.findUnique({
+      where: { id },
+      select: { role: true },
+    });
 
     if (!existing) {
       throw new AppError('Admin not found', 404);
